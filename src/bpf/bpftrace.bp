@@ -38,7 +38,7 @@ hardware:cache-misses:10000 /pid == ${PID}/
   @res_count["cache-misses:10000"] = count();
 }
 
-interval:s:1
+interval:s:5
 {
   exit();
 }

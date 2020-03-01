@@ -4,6 +4,8 @@ use std::error::Error;
 use std::process::Stdio;
 use tokio::process::Child;
 use tokio::process::Command;
+use std::sync::mpsc::Receiver;
+use log::error;
 
 pub mod profile;
 
@@ -14,34 +16,39 @@ const PERF_ARGS: &[&str] = &[
 
 pub struct Perf {
     pid: u32,
+    receiver: Receiver<bool>,
+
 }
 
 impl Perf {
-    pub fn new(pid: u32) -> Self {
-        Self { pid }
+    pub fn new(pid: u32, receiver: Receiver<bool>) -> Self {
+        Self { pid, receiver}
     }
 
-    pub fn run(self) -> Result<PerfRunning, Box<dyn Error>> {
+    pub async fn run(self) -> Result<Vec<PerfProfile>, Box<dyn Error>> {
+        println!("{:?}", Command::new("/usr/bin/perf")
+        .args(PERF_ARGS)
+        .arg(format!("-p {}", self.pid))
+        .arg("-I 5000")
+        .arg("-x,")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped()));
         let cmd = Command::new("/usr/bin/perf")
             .args(PERF_ARGS)
             .arg(format!("-p {}", self.pid))
-            .arg("-I 1000")
+            .arg("-I 5000")
             .arg("-x,")
+            .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
 
-        Ok(PerfRunning { exec: cmd })
-    }
-}
+        self.receiver.recv()?;
+        // stop_process(&cmd)?;
 
-pub struct PerfRunning {
-    exec: Child,
-}
-
-impl PerfRunning {
-    pub async fn stop(mut self) -> Result<PerfProfile, Box<dyn Error>> {
-        stop_process(&mut self.exec)?;
-        let out = self.exec.wait_with_output().await?;
+        let out = cmd.wait_with_output().await?;
+        if !out.status.success() {
+            error!("Perf exited with error {:?}", out);
+        }
         PerfProfile::from_stream(String::from_utf8_lossy(&out.stderr).to_string())
     }
 }

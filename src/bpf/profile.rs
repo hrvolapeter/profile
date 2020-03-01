@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use log::{info, trace, warn};
+
 
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResCount {
     #[serde(alias = "cache-misses:10000")]
-    cache_misses: u128,
+    cache_misses: Option<u128>,
     #[serde(alias = "cache-references:10000")]
     cache_references: u128,
     #[serde(alias = "instructions:10000")]
@@ -56,20 +58,20 @@ pub struct BpfProfileBuilder {
 }
 
 impl BpfProfileBuilder {
-    fn build(self) -> BpfProfile {
-        BpfProfile {
-            cycles: self.cycles.unwrap(),
-            instructions: self.instructions.unwrap(),
-            cache_misses: self.cache_misses.unwrap(),
-            cache_references: self.cache_references.unwrap(),
+    fn build(self) -> Result<BpfProfile, Box<std::option::NoneError>> {
+        Ok(BpfProfile {
+            cycles: self.cycles?,
+            instructions: self.instructions?,
+            cache_misses: self.cache_misses?,
+            cache_references: self.cache_references?,
             vfs_read: self.vfs_read,
             vfs_write: self.vfs_write,
-        }
+        })
     }
 }
 
 impl BpfProfile {
-    pub fn from_stream(s: String) -> Result<Self, Box<dyn Error>> {
+    pub fn from_stream(s: &String) -> Result<Self, Box<dyn Error>> {
         let res: Vec<_> = s
             .lines()
             .map(|x| serde_json::from_str(x))
@@ -79,15 +81,14 @@ impl BpfProfile {
                 Entry::Map_(x) => x,
             })
             .collect();
-
+        trace!("Bpf stdout message: {:?}", s);
         assert!(
-            res.len() < 2 && !res.is_empty(),
-            "should have at least counts at most counts, sums once"
+            res.len() < 3 ,
+            "should have at most counts, sums once"
         );
-        let mut out = BpfProfileBuilder {
-            ..Default::default()
-        };
+        let mut out = BpfProfileBuilder::default();
         for i in res {
+            trace!("Bpf parsed message: \"{:?}\"", i);
             match i {
                 BpfOut::ResCount(x) => {
                     out.cycles = Some(x.cycles);
@@ -101,7 +102,7 @@ impl BpfProfile {
                 }
             }
         }
-        Ok(out.build())
+        Ok(out.build().map_err(|_| "Option::NoneError")?)
     }
 }
 

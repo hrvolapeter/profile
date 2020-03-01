@@ -5,7 +5,8 @@ use std::io::Write;
 use std::process::Stdio;
 use std::sync::mpsc::Receiver;
 use tempfile::NamedTempFile;
-
+use log::debug;
+use log::warn;
 
 use tokio::process::Command;
 
@@ -43,8 +44,11 @@ impl Bpf {
 
             let out = cmd.wait_with_output().await?;
             let s = String::from_utf8_lossy(&out.stdout).to_string();
-            let profile = BpfProfile::from_stream(s)?;
-            res.push(profile);
+            if let Ok(profile) = BpfProfile::from_stream(&s) {
+                res.push(profile);
+            } else {
+                warn!("No bpf parsed from: \"{}\"", s);
+            }
         }
         Ok(res)
     }
