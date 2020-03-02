@@ -59,16 +59,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
         perfs.push(spawn(async {perf.await.unwrap()}));
     }
 
+    let (sender, receiver) = channel();
+
     if let Some(main) = main {
+        debug!("Waiting for main to finish");
         main.await?;
+        debug!("Main finished, exiting perf and bpf");
         exit_tracers(&bpfs_senders, &perfs_senders);
+        sender.send(true)?;
     } 
     
-    let (sender, receiver) = channel();
     ctrlc::set_handler(move || {
         debug!("received Ctrl+C!");
         exit_tracers(&bpfs_senders, &perfs_senders);
-        sender.send(true);
+        sender.send(true).expect("Send close message");
     })?;
     receiver.recv()?;
     print_profile(bpfs, perfs).await;
@@ -107,7 +111,6 @@ fn setup_logger() -> Result<(), fern::InitError> {
             ))
         })
         .chain(std::io::stderr())
-        .chain(fern::log_file("output.log")?)
         .apply()?;
     Ok(())
 }

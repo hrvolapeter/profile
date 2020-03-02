@@ -6,6 +6,7 @@ use tokio::process::Child;
 use tokio::process::Command;
 use std::sync::mpsc::Receiver;
 use log::error;
+use log::debug;
 
 pub mod profile;
 
@@ -26,13 +27,6 @@ impl Perf {
     }
 
     pub async fn run(self) -> Result<Vec<PerfProfile>, Box<dyn Error>> {
-        println!("{:?}", Command::new("/usr/bin/perf")
-        .args(PERF_ARGS)
-        .arg(format!("-p {}", self.pid))
-        .arg("-I 5000")
-        .arg("-x,")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped()));
         let cmd = Command::new("/usr/bin/perf")
             .args(PERF_ARGS)
             .arg(format!("-p {}", self.pid))
@@ -43,12 +37,13 @@ impl Perf {
             .spawn()?;
 
         self.receiver.recv()?;
-        // stop_process(&cmd)?;
+        stop_process(&cmd)?;
 
         let out = cmd.wait_with_output().await?;
         if !out.status.success() {
             error!("Perf exited with error {:?}", out);
         }
+        debug!("Perfs exited");
         PerfProfile::from_stream(String::from_utf8_lossy(&out.stderr).to_string())
     }
 }

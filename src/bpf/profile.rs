@@ -18,8 +18,10 @@ pub struct ResCount {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResSum {
-    vfs_write: u128,
-    vfs_read: u128,
+    vfs_write: Option<u128>,
+    vfs_read: Option<u128>,
+    tcp_send_bytes: Option<u128>,
+    tcp_recv_bytes: Option<u128>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -43,8 +45,10 @@ pub struct BpfProfile {
     pub instructions: u128,
     pub cache_misses: u128,
     pub cache_references: u128,
-    pub vfs_write: Option<u128>,
-    pub vfs_read: Option<u128>,
+    pub vfs_write: u128,
+    pub vfs_read: u128,
+    pub tcp_send_bytes: u128,
+    pub tcp_recv_bytes: u128,
 }
 
 #[derive(Debug, Default)]
@@ -55,33 +59,34 @@ pub struct BpfProfileBuilder {
     pub cache_references: Option<u128>,
     pub vfs_write: Option<u128>,
     pub vfs_read: Option<u128>,
+    pub tcp_send_bytes: Option<u128>,
+    pub tcp_recv_bytes: Option<u128>,
 }
 
 impl BpfProfileBuilder {
-    fn build(self) -> Result<BpfProfile, Box<std::option::NoneError>> {
-        Ok(BpfProfile {
-            cycles: self.cycles?,
-            instructions: self.instructions?,
-            cache_misses: self.cache_misses?,
-            cache_references: self.cache_references?,
-            vfs_read: self.vfs_read,
-            vfs_write: self.vfs_write,
-        })
+    fn build(self) -> BpfProfile {
+        BpfProfile {
+            cycles: self.cycles.unwrap_or_default(),
+            instructions: self.instructions.unwrap_or_default(),
+            cache_misses: self.cache_misses.unwrap_or_default(),
+            cache_references: self.cache_references.unwrap_or_default(),
+            vfs_read: self.vfs_read.unwrap_or_default(),
+            vfs_write: self.vfs_write.unwrap_or_default(),
+            tcp_send_bytes: self.tcp_send_bytes.unwrap_or_default(),
+            tcp_recv_bytes: self.tcp_recv_bytes.unwrap_or_default(),
+        }
     }
 }
 
 impl BpfProfile {
     pub fn from_stream(s: &String) -> Result<Self, Box<dyn Error>> {
+        trace!("Bpf stdout message: {:?}", &s);
         let res: Vec<_> = s
             .lines()
             .map(|x| serde_json::from_str(x))
             .filter_map(Result::ok)
-            .map(|x| match x {
-                Entry::Map_(BpfOut::ResCount(x)) => BpfOut::ResCount(normalize_counts(x, 10_000)),
-                Entry::Map_(x) => x,
-            })
+            .map(| Entry::Map_(x) | x)
             .collect();
-        trace!("Bpf stdout message: {:?}", s);
         assert!(
             res.len() < 3 ,
             "should have at most counts, sums once"
@@ -93,24 +98,27 @@ impl BpfProfile {
                 BpfOut::ResCount(x) => {
                     out.cycles = Some(x.cycles);
                     out.instructions = Some(x.instructions);
-                    out.cache_misses = Some(x.cache_misses);
+                    out.cache_misses = x.cache_misses;
                     out.cache_references = Some(x.cache_references);
                 }
                 BpfOut::ResSum(x) => {
-                    out.vfs_write = Some(x.vfs_write);
-                    out.vfs_read = Some(x.vfs_read);
+                    out.vfs_write = x.vfs_write;
+                    out.vfs_read = x.vfs_read;
+                    out.tcp_send_bytes = x.tcp_send_bytes;
+                    out.tcp_recv_bytes = x.tcp_recv_bytes;
                 }
             }
         }
-        Ok(out.build().map_err(|_| "Option::NoneError")?)
+        Ok(out.build().normalize(10_000))
     }
-}
 
-fn normalize_counts(x: ResCount, factor: u128) -> ResCount {
-    ResCount {
-        cache_misses: x.cache_misses * factor,
-        cache_references: x.cache_references * factor,
-        instructions: x.instructions * factor,
-        cycles: x.cycles * factor,
+    fn normalize(mut self, factor: u128) -> Self {  
+        self.cache_misses = self.cache_misses * factor;
+        self.cache_references = self.cache_references * factor;
+        self.instructions = self.instructions * factor;
+        self.cycles = self.cycles * factor;
+
+        self
     }
+    
 }

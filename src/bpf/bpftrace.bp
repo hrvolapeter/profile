@@ -38,6 +38,16 @@ hardware:cache-misses:10000 /pid == ${PID}/
   @res_count["cache-misses:10000"] = count();
 }
 
+kprobe:tcp_sendmsg /pid == ${PID} && arg2 > 0/
+{
+  @res_sum["tcp_send_bytes"] = sum(arg2);
+}
+
+kprobe:tcp_cleanup_rbuf /pid == ${PID} && arg1 > 0/
+{
+  @res_sum["tcp_recv_bytes"] = sum(arg1);
+}
+
 interval:s:5
 {
   exit();

@@ -50,6 +50,7 @@ impl Bpf {
                 warn!("No bpf parsed from: \"{}\"", s);
             }
         }
+        debug!("Bpfs exited");
         Ok(res)
     }
 }
