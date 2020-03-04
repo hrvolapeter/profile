@@ -2,7 +2,6 @@ use self::profile::PerfProfile;
 use crate::util::stop_process;
 use std::error::Error;
 use std::process::Stdio;
-use tokio::process::Child;
 use tokio::process::Command;
 use std::sync::mpsc::Receiver;
 use log::error;

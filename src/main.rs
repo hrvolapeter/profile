@@ -4,7 +4,6 @@
 use crate::application_profile::ApplicationProfile;
 use crate::bpf::Bpf;
 use crate::perf::Perf;
-use std::env;
 use std::error::Error;
 use std::sync::mpsc::channel;
 use tokio::process::Child;
@@ -21,7 +20,6 @@ mod application_profile;
 mod bpf;
 mod perf;
 mod util;
-mod out;
 
 
 #[tokio::main]
@@ -84,7 +82,7 @@ async fn print_profile(bpfs: Vec<JoinHandle<Vec<BpfProfile>>>, perfs:Vec<JoinHan
     let bpfs = join_all(bpfs).await.into_iter().filter_map(Result::ok).flatten().collect();
     let perfs = join_all(perfs).await.into_iter().filter_map(Result::ok).flatten().collect();
     let ap = ApplicationProfile::new(bpfs, perfs);
-    println!("{:?}", ap);
+    println!("{}", ApplicationProfile::out(ap).unwrap());
 
 }
 

@@ -7,13 +7,13 @@ pub trait FromHashmap<T>: Default {
 }
 #[derive(Debug, Default, FromHashmap)]
 pub struct PerfProfile {
-    l1_dcache_loads: u128,
-    l1_dcache_load_misses: u128,
-    l1_icache_load_misses: u128,
-    llc_load_misses: u128,
-    llc_loads: u128,
-    cycles: u128,
-    instructions: u128,
+    pub l1_dcache_loads: u128,
+    pub l1_dcache_load_misses: u128,
+    pub l1_icache_load_misses: u128,
+    pub llc_load_misses: u128,
+    pub llc_loads: u128,
+    pub cycles: u128,
+    pub instructions: u128,
 }
 
 type Record = (String, u128, Option<String>, String);
