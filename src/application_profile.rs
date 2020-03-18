@@ -1,15 +1,16 @@
 
 use crate::bpf::profile::BpfProfile;
 use crate::perf::profile::PerfProfile;
+use crate::pmap::PmapProfile;
 use std::error::Error;
 use serde::Serialize;
 use csv::Writer;
+use itertools::izip;
+
 
 
 #[derive(Debug, Serialize)]
 pub struct ApplicationProfile {
-    cycles: u128,
-    instructions: u128,
     cache_misses: u128,
     cache_references: u128,
     vfs_write: u128,
@@ -22,17 +23,15 @@ pub struct ApplicationProfile {
     l1_icache_load_misses: u128,
     llc_load_misses: u128,
     llc_loads: u128,
-    cycles_perf: u128,
-    instructions_perf: u128,
+    cycles: u128,
+    instructions: u128,
+    memory: u128,
 }
 
 impl ApplicationProfile {
-    pub fn new(bpf: Vec<BpfProfile>, perf: Vec<PerfProfile>) -> Vec<Self> {
-        bpf.into_iter()
-            .zip(perf.into_iter())
-            .map(|(x, y)| ApplicationProfile {
-                cycles: x.cycles,
-                instructions: x.instructions,
+    pub fn new(bpf: Vec<BpfProfile>, perf: Vec<PerfProfile>, pmap: Vec<PmapProfile>) -> Vec<Self> {
+        izip!(bpf, perf, pmap).map(|(x, y,z)| ApplicationProfile {
+                memory: z.memory,
                 cache_misses: x.cache_misses,
                 cache_references: x.cache_references,
                 vfs_write: x.vfs_write,
@@ -44,8 +43,8 @@ impl ApplicationProfile {
                 l1_icache_load_misses: y.l1_icache_load_misses,
                 llc_load_misses: y.llc_load_misses,
                 llc_loads: y.llc_loads,
-                cycles_perf: y.cycles,
-                instructions_perf: y.instructions,
+                cycles: y.cycles,
+                instructions: y.instructions,
             })
             .collect()
     }

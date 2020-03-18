@@ -15,20 +15,22 @@ const PERF_ARGS: &[&str] = &[
 ];
 
 pub struct Perf {
-    pid: u32,
+    pids: String,
     receiver: Receiver<bool>,
 
 }
 
 impl Perf {
-    pub fn new(pid: u32, receiver: Receiver<bool>) -> Self {
-        Self { pid, receiver}
+    pub fn new(pids: &[u32], receiver: Receiver<bool>) -> Self {
+        let pids: Vec<_> = pids.iter().map(|x| x.to_string()).collect();
+        let pids = pids.join(",");
+        Self { pids, receiver}
     }
 
     pub async fn run(self) -> Result<Vec<PerfProfile>, Box<dyn Error>> {
         let cmd = Command::new("/usr/bin/perf")
             .args(PERF_ARGS)
-            .arg(format!("-p {}", self.pid))
+            .arg(format!("-p {}", &self.pids[..]))
             .arg("-I 5000")
             .arg("-x,")
             .stdout(Stdio::piped())

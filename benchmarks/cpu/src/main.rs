@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         get_factors_functional(num)
     }).collect();
 
-    println!("{}", res.len());
+    eprintln!("{}", res.len());
     Ok(())
 }
 

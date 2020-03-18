@@ -7,6 +7,7 @@ use std::sync::mpsc::Receiver;
 use tempfile::NamedTempFile;
 use log::debug;
 use log::warn;
+use log::trace;
 
 use tokio::process::Command;
 
@@ -20,12 +21,16 @@ pub struct Bpf {
 }
 
 impl Bpf {
-    pub fn new(pid: u32, receiver: Receiver<bool>) -> Result<Bpf, Box<dyn Error>> {
+    pub fn new(pids: &[u32], receiver: Receiver<bool>) -> Result<Bpf, Box<dyn Error>> {
+        let pids: Vec<_> = pids.iter().map(|x| format!("pid == {}", x)).collect();
+        let pids = pids.join(" || ");
+        let bpf_src = String::from(BPF_SRC).replace("${PID}", &pids[..]);
+        trace!("Bpf compiled: \"{}\"",bpf_src);
         let mut file = NamedTempFile::new()?;
         writeln!(
             file,
             "{}",
-            String::from(BPF_SRC).replace("${PID}", &pid.to_string()[..])
+            bpf_src
         )?;
         Ok(Bpf {
             conf: file,

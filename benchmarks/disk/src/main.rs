@@ -4,7 +4,10 @@ use std::error::Error;
 use std::thread;
 use std::fs::OpenOptions;
 use std::io::BufWriter;
+use std::io::BufReader;
+use std::io::Read;
 use std::io::Write;
+use ring::digest::{Context, Digest, SHA256};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let matches = App::new("disk")
@@ -34,19 +37,29 @@ fn main() -> Result<(), Box<dyn Error>> {
         .expect("size provided").parse::<u32>()?;
 
  
-    let handles: Vec<_> = paths.map(|x| {
+    let handles: Vec<_> = paths.clone().map(|x| {
         let x = x.to_string();
         let size = size.clone();
-        thread::spawn(move || benchmark(x, size).unwrap())
+        thread::spawn(move || benchmark_write(x, size).unwrap())
     }).collect();
 
     for h in handles {
         h.join().unwrap();
     }
+
+    let handles: Vec<_> = paths.map(|x| {
+        let x = x.to_string();
+        thread::spawn(move || benchmark_read(x).unwrap())
+    }).collect();
+
+    for h in handles {
+        let res = h.join().unwrap();
+        eprintln!("{:?}", res);
+    }
     Ok(())
 }
 
-fn benchmark(p: String, size: u32) -> Result<(), Box<dyn Error>> {
+fn benchmark_write(p: String, size: u32) -> Result<(), Box<dyn Error>> {
     let mut vector = Vec::new();
     
     let mut rng = rand::thread_rng();
@@ -62,4 +75,19 @@ fn benchmark(p: String, size: u32) -> Result<(), Box<dyn Error>> {
     }
     wrt.flush()?;
     Ok(())
+}
+
+fn benchmark_read(p: String) -> Result<Digest, Box<dyn Error>> {
+    let mut context = Context::new(&SHA256);
+    let mut buffer = [0; 4096*4];
+    let file = OpenOptions::new().read(true).open(p)?;
+    let mut rdr = BufReader::new(file);
+    loop {
+        let count = rdr.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        context.update(&buffer[..count]);
+    }
+    Ok(context.finish())
 }

@@ -57,7 +57,7 @@ fn transpose(records: Vec<Record>) -> HashMap<String, Vec<u128>> {
     }
     let l = res.values().next().expect("Perf should have some results").len();
     for (key, val) in &res {
-        assert_eq!(l, val.len(), "{} different length", key);
+        assert_eq!(l, val.len(), "'{}' different length", key);
     }
     res
 }

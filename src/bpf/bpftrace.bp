@@ -1,49 +1,39 @@
-kretprobe:vfs_read* /retval > 0 && pid == ${PID}/
+kretprobe:vfs_read* /retval > 0 && (${PID})/
 {
   @res_sum["vfs_read"] = sum(retval);
 }
 
-kretprobe:vfs_write* /retval > 0 && pid == ${PID}/
+kretprobe:vfs_write* /retval > 0 && (${PID})/
 {
   @res_sum["vfs_write"] = sum(retval);
 }
 
-kprobe:ip_output /pid == ${PID}/
+kprobe:ip_output /${PID}/
 {
   @res_count["ip_output"] = count();
 }
 
-kprobe:ip_rcv /pid == ${PID}/
+kprobe:ip_rcv /${PID}/
 {
   @res_count["ip_rcv"] = count();
 }
 
-hardware:cycles:10000 /pid == ${PID}/
-{
-  @res_count["cycles:10000"] = count();
-}
-
-hardware:instructions:10000 /pid == ${PID}/
-{
-  @res_count["instructions:10000"] = count();
-}
-
-hardware:cache-references:10000 /pid == ${PID}/
+hardware:cache-references:10000 /${PID}/
 {
   @res_count["cache-references:10000"] = count();
 }
 
-hardware:cache-misses:10000 /pid == ${PID}/
+hardware:cache-misses:10000 /${PID}/
 {
   @res_count["cache-misses:10000"] = count();
 }
 
-kprobe:tcp_sendmsg /pid == ${PID} && arg2 > 0/
+kprobe:tcp_sendmsg /arg2 > 0 && (${PID})/
 {
   @res_sum["tcp_send_bytes"] = sum(arg2);
 }
 
-kprobe:tcp_cleanup_rbuf /pid == ${PID} && arg1 > 0/
+kprobe:tcp_cleanup_rbuf /arg1 > 0 && (${PID})/
 {
   @res_sum["tcp_recv_bytes"] = sum(arg1);
 }

@@ -10,10 +10,6 @@ pub struct ResCount {
     cache_misses: Option<u128>,
     #[serde(alias = "cache-references:10000")]
     cache_references: u128,
-    #[serde(alias = "instructions:10000")]
-    instructions: u128,
-    #[serde(alias = "cycles:10000")]
-    cycles: u128,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -41,8 +37,6 @@ pub enum Entry {
 
 #[derive(Debug)]
 pub struct BpfProfile {
-    pub cycles: u128,
-    pub instructions: u128,
     pub cache_misses: u128,
     pub cache_references: u128,
     pub vfs_write: u128,
@@ -53,8 +47,6 @@ pub struct BpfProfile {
 
 #[derive(Debug, Default)]
 pub struct BpfProfileBuilder {
-    pub cycles: Option<u128>,
-    pub instructions: Option<u128>,
     pub cache_misses: Option<u128>,
     pub cache_references: Option<u128>,
     pub vfs_write: Option<u128>,
@@ -66,8 +58,6 @@ pub struct BpfProfileBuilder {
 impl BpfProfileBuilder {
     fn build(self) -> BpfProfile {
         BpfProfile {
-            cycles: self.cycles.unwrap_or_default(),
-            instructions: self.instructions.unwrap_or_default(),
             cache_misses: self.cache_misses.unwrap_or_default(),
             cache_references: self.cache_references.unwrap_or_default(),
             vfs_read: self.vfs_read.unwrap_or_default(),
@@ -96,8 +86,6 @@ impl BpfProfile {
             trace!("Bpf parsed message: \"{:?}\"", i);
             match i {
                 BpfOut::ResCount(x) => {
-                    out.cycles = Some(x.cycles);
-                    out.instructions = Some(x.instructions);
                     out.cache_misses = x.cache_misses;
                     out.cache_references = Some(x.cache_references);
                 }
@@ -115,8 +103,6 @@ impl BpfProfile {
     fn normalize(mut self, factor: u128) -> Self {  
         self.cache_misses = self.cache_misses * factor;
         self.cache_references = self.cache_references * factor;
-        self.instructions = self.instructions * factor;
-        self.cycles = self.cycles * factor;
 
         self
     }
