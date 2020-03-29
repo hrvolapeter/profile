@@ -19,21 +19,19 @@ pub fn from_hashmap(input: TokenStream) -> TokenStream {
 
     // create a vector containing the names of all fields on the struct
     let idents: Vec<Ident> = match ast.body {
-        syn::Body::Struct(vdata) => {
-            match vdata {
-                VariantData::Struct(fields) => {
-                    let mut idents = Vec::new();
-                    for ref field in fields.iter() {
-                        match &field.ident {
-                            &Some(ref ident) => idents.push(ident.clone()),
-                            &None => panic!("Your struct is missing a field identity!"),
-                        }
+        syn::Body::Struct(vdata) => match vdata {
+            VariantData::Struct(fields) => {
+                let mut idents = Vec::new();
+                for ref field in fields.iter() {
+                    match &field.ident {
+                        &Some(ref ident) => idents.push(ident.clone()),
+                        &None => panic!("Your struct is missing a field identity!"),
                     }
-                    idents
-                },
-                VariantData::Tuple(_) | VariantData::Unit => {
-                    panic!("You can only derive this for normal structs!");
-                },
+                }
+                idents
+            }
+            VariantData::Tuple(_) | VariantData::Unit => {
+                panic!("You can only derive this for normal structs!");
             }
         },
         syn::Body::Enum(_) => panic!("You can only derive this on structs!"),

@@ -1,7 +1,7 @@
 use from_hashmap::FromHashmap;
+use log::trace;
 use std::collections::HashMap;
 use std::error::Error;
-use log::trace;
 pub trait FromHashmap<T>: Default {
     fn from_hashmap(hm: HashMap<String, u128>) -> T;
 }
@@ -55,7 +55,11 @@ fn transpose(records: Vec<Record>) -> HashMap<String, Vec<u128>> {
         let counter = res.entry(r.3).or_insert_with(|| vec![]);
         counter.push(r.1)
     }
-    let l = res.values().next().expect("Perf should have some results").len();
+    let l = res
+        .values()
+        .next()
+        .expect("Perf should have some results")
+        .len();
     for (key, val) in &res {
         assert_eq!(l, val.len(), "'{}' different length", key);
     }

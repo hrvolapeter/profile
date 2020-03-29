@@ -1,8 +1,6 @@
+use log::trace;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use log::trace;
-
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResCount {
@@ -75,12 +73,9 @@ impl BpfProfile {
             .lines()
             .map(|x| serde_json::from_str(x))
             .filter_map(Result::ok)
-            .map(| Entry::Map_(x) | x)
+            .map(|Entry::Map_(x)| x)
             .collect();
-        assert!(
-            res.len() < 3 ,
-            "should have at most counts, sums once"
-        );
+        assert!(res.len() < 3, "should have at most counts, sums once");
         let mut out = BpfProfileBuilder::default();
         for i in res {
             trace!("Bpf parsed message: \"{:?}\"", i);
@@ -100,11 +95,10 @@ impl BpfProfile {
         Ok(out.build().normalize(10_000))
     }
 
-    fn normalize(mut self, factor: u128) -> Self {  
+    fn normalize(mut self, factor: u128) -> Self {
         self.cache_misses = self.cache_misses * factor;
         self.cache_references = self.cache_references * factor;
 
         self
     }
-    
 }

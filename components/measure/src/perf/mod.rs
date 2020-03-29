@@ -1,11 +1,11 @@
 use self::profile::PerfProfile;
 use crate::util::stop_process;
+use log::debug;
+use log::error;
 use std::error::Error;
 use std::process::Stdio;
-use tokio::process::Command;
 use std::sync::mpsc::Receiver;
-use log::error;
-use log::debug;
+use tokio::process::Command;
 
 pub mod profile;
 
@@ -17,14 +17,13 @@ const PERF_ARGS: &[&str] = &[
 pub struct Perf {
     pids: String,
     receiver: Receiver<bool>,
-
 }
 
 impl Perf {
     pub fn new(pids: &[u32], receiver: Receiver<bool>) -> Self {
         let pids: Vec<_> = pids.iter().map(|x| x.to_string()).collect();
         let pids = pids.join(",");
-        Self { pids, receiver}
+        Self { pids, receiver }
     }
 
     pub async fn run(self) -> Result<Vec<PerfProfile>, Box<dyn Error>> {

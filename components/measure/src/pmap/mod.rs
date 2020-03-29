@@ -1,15 +1,14 @@
+use log::debug;
+use log::trace;
+use log::warn;
+use regex::Regex;
 use std::error::Error;
 use std::io::Write;
 use std::process::Stdio;
 use std::sync::mpsc::Receiver;
-use log::debug;
-use log::warn;
-use log::trace;
-use regex::Regex;
 use std::{thread, time};
 
 use tokio::process::Command;
-
 
 pub struct Pmap {
     pids: Vec<String>,
@@ -19,10 +18,7 @@ pub struct Pmap {
 impl Pmap {
     pub fn new(pids: &[u32], receiver: Receiver<bool>) -> Result<Pmap, Box<dyn Error>> {
         let pids: Vec<_> = pids.iter().map(|x| x.to_string()).collect();
-        Ok(Self {
-            pids,
-            receiver,
-        })
+        Ok(Self { pids, receiver })
     }
 
     pub async fn lop(self) -> Result<Vec<PmapProfile>, Box<dyn Error>> {
@@ -43,10 +39,13 @@ impl Pmap {
             let mut memory = 0;
             for cap in regex.captures_iter(&s[..]) {
                 trace!("Pmap result regex {:?}", cap);
-                memory += cap.get(1).map(|x| x.as_str().parse::<u128>().expect("Should be number")).expect("Have number");
-            };
+                memory += cap
+                    .get(1)
+                    .map(|x| x.as_str().parse::<u128>().expect("Should be number"))
+                    .expect("Have number");
+            }
 
-            let pf = PmapProfile{ memory } ;
+            let pf = PmapProfile { memory };
             debug!("Pmap {:?}", pf);
             res.push(pf);
         }
@@ -57,5 +56,5 @@ impl Pmap {
 
 #[derive(Debug)]
 pub struct PmapProfile {
-    pub memory: u128
+    pub memory: u128,
 }

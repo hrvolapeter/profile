@@ -4,10 +4,7 @@ use clap::{App, Arg};
 use rand::Rng;
 use std::error::Error;
 
-
-
 use std::thread;
-
 
 fn main() -> Result<(), Box<dyn Error>> {
     run_test()

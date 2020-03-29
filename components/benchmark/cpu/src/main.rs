@@ -1,9 +1,9 @@
-use std::fs;
+use clap::{App, Arg};
+use rayon::iter::ParallelBridge;
+use rayon::prelude::*;
 use std::env;
 use std::error::Error;
-use rayon::prelude::*;
-use rayon::iter::ParallelBridge;
-use clap::{App, Arg};
+use std::fs;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let matches = App::new("cpu")
@@ -17,10 +17,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         .get_matches();
 
     let s = fs::read_to_string(matches.value_of("path").unwrap())?;
-    let res: Vec<_> = s.lines().par_bridge().map(|i| {
-        let num: u128 = i.trim().parse().unwrap();
-        get_factors_functional(num)
-    }).collect();
+    let res: Vec<_> = s
+        .lines()
+        .par_bridge()
+        .map(|i| {
+            let num: u128 = i.trim().parse().unwrap();
+            get_factors_functional(num)
+        })
+        .collect();
 
     eprintln!("{}", res.len());
     Ok(())

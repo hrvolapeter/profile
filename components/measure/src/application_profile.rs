@@ -1,13 +1,10 @@
-
 use crate::bpf::profile::BpfProfile;
 use crate::perf::profile::PerfProfile;
 use crate::pmap::PmapProfile;
-use std::error::Error;
-use serde::Serialize;
 use csv::Writer;
 use itertools::izip;
-
-
+use serde::Serialize;
+use std::error::Error;
 
 #[derive(Debug, Serialize)]
 pub struct ApplicationProfile {
@@ -30,7 +27,8 @@ pub struct ApplicationProfile {
 
 impl ApplicationProfile {
     pub fn new(bpf: Vec<BpfProfile>, perf: Vec<PerfProfile>, pmap: Vec<PmapProfile>) -> Vec<Self> {
-        izip!(bpf, perf, pmap).map(|(x, y,z)| ApplicationProfile {
+        izip!(bpf, perf, pmap)
+            .map(|(x, y, z)| ApplicationProfile {
                 memory: z.memory,
                 cache_misses: x.cache_misses,
                 cache_references: x.cache_references,
@@ -54,8 +52,7 @@ impl ApplicationProfile {
         for i in v {
             wtr.serialize(i)?;
         }
-    
+
         Ok(String::from_utf8(wtr.into_inner()?).unwrap())
     }
 }
-

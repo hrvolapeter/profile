@@ -1,13 +1,13 @@
 use self::profile::BpfProfile;
 
+use log::debug;
+use log::trace;
+use log::warn;
 use std::error::Error;
 use std::io::Write;
 use std::process::Stdio;
 use std::sync::mpsc::Receiver;
 use tempfile::NamedTempFile;
-use log::debug;
-use log::warn;
-use log::trace;
 
 use tokio::process::Command;
 
@@ -25,13 +25,9 @@ impl Bpf {
         let pids: Vec<_> = pids.iter().map(|x| format!("pid == {}", x)).collect();
         let pids = pids.join(" || ");
         let bpf_src = String::from(BPF_SRC).replace("${PID}", &pids[..]);
-        trace!("Bpf compiled: \"{}\"",bpf_src);
+        trace!("Bpf compiled: \"{}\"", bpf_src);
         let mut file = NamedTempFile::new()?;
-        writeln!(
-            file,
-            "{}",
-            bpf_src
-        )?;
+        writeln!(file, "{}", bpf_src)?;
         Ok(Bpf {
             conf: file,
             receiver,
