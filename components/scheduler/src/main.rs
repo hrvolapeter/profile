@@ -3,14 +3,18 @@
 mod flow;
 mod web;
 
+use pharos::Pharos;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use pharos::Pharos;
+use web::graph::Graph;
 
 #[tokio::main(core_threads = 4)]
 async fn main() -> Result<(), Box<dyn Error>> {
     setup_logger()?;
+    let graph = flow::Graph::default();
+    let paths = graph.run();
+    Graph::from_flow(paths);
     let pharos = Arc::new(Mutex::new(Pharos::default()));
     let server = web::serve(pharos.clone());
     futures::join!(server);

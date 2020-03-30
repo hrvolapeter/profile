@@ -3,10 +3,8 @@ use futures::{FutureExt, StreamExt};
 use handlebars::Handlebars;
 use lazy_static::lazy_static;
 use pharos::*;
+use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
-use std::sync::{
-    Arc,
-};
 use warp::ws::{Message, WebSocket};
 
 lazy_static! {

@@ -1,5 +1,5 @@
+pub mod graph;
 mod handlers;
-mod graph;
 
 use self::graph::Graph;
 use pharos::Pharos;
@@ -11,8 +11,8 @@ type GraphObsrv = Arc<Mutex<Pharos<Graph>>>;
 
 pub async fn serve(graph: GraphObsrv) {
     let routes = get_schedule_graph()
-    .or(get_index())
-    .or(get_api_schedule_graph(graph));
+        .or(get_index())
+        .or(get_api_schedule_graph(graph));
     warp::serve(routes).run(([0, 0, 0, 0], 8080)).await;
 }
 
