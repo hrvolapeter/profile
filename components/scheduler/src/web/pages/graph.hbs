@@ -1,0 +1,68 @@
+{{> header}}
+
+<script type="text/javascript">
+// create an array with nodes
+var nodes;
+// create an array with edges
+var edges;
+
+{{!-- $(function() {
+  url = "/api/schedule/graph/";
+  $.ajax({
+    url: url,
+    async: false,
+    dataType: 'json',
+    success: function(data) {
+      nodes = new vis.DataSet(data.nodes);
+      edges = new vis.DataSet(data.edges);
+      plotNetwork();
+    },
+    error: function(req, err, et) {
+      window.alert(et);
+    }});
+}); --}}
+let socket = new WebSocket("ws://" + window.location.host + "/api/schedule/graph/");
+socket.onopen = function(e) {
+  alert("[open] Connection established");
+};
+
+socket.onmessage = function(event) {
+    nodes = event.data.nodes
+    edges = even.data.edges
+    plotNetwork()
+};
+
+socket.onclose = function(event) {
+  if (event.wasClean) {
+    alert(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+  } else {
+    // e.g. server process killed or network down
+    // event.code is usually 1006 in this case
+    alert('[close] Connection died');
+  }
+};
+
+socket.onerror = function(error) {
+  alert(`[error] ${error.message}`);
+};
+
+function plotNetwork() {
+  // create a network
+  var container = document.getElementById('flow-graph');
+  var data = {
+    nodes: nodes,
+    edges: edges
+  };
+  var options = {
+    layout: {
+    },
+    edges: {
+      smooth: true,
+      arrows: {to : true }
+    }
+  };
+  var network = new vis.Network(container, data, options);
+}
+</script>
+
+{{> footer }}
