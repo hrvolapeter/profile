@@ -3,20 +3,25 @@
 mod flow;
 mod web;
 
-use pharos::Pharos;
 use std::error::Error;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use web::graph::Graph;
+use tokio::sync::watch;
+
 
 #[tokio::main(core_threads = 4)]
 async fn main() -> Result<(), Box<dyn Error>> {
     setup_logger()?;
-    let graph = flow::Graph::default();
-    let paths = graph.run();
-    Graph::from_flow(paths);
-    let pharos = Arc::new(Mutex::new(Pharos::default()));
-    let server = web::serve(pharos.clone());
+    let mut graph = flow::Graph::default();
+    graph.add_server(flow::Server::new("Server 1".to_string(), Default::default()));
+    graph.add_server(flow::Server::new("Server 2".to_string(), Default::default()));
+    graph.add_server(flow::Server::new("Server 3".to_string(), Default::default()));
+
+    graph.add_task(flow::Task::new("Task 1".to_string(), Default::default()));
+    graph.add_task(flow::Task::new("Task 2".to_string(), Default::default()));
+    graph.add_task(flow::Task::new("Task 3".to_string(), Default::default()));
+    let graph = Graph::from_flow(graph.run());
+    let (_tx, rx) =  watch::channel(graph);
+    let server = web::serve(rx);
     futures::join!(server);
     Ok(())
 }

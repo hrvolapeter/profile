@@ -2,20 +2,25 @@
 mod resource_profile;
 
 use self::resource_profile::ResourceProfile;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
+
+
 use mcmf::{GraphBuilder, Vertex, Cost, Capacity, Path};
 
+pub trait Displayable {
+    fn name(&self) -> String;
+}
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]
 pub struct Task {
     request: ResourceProfile,
+    name: String,
 }
 
 impl Task {
-    fn with_resource_profile(profile: ResourceProfile) -> Self {
+    pub fn new(name: String, request: ResourceProfile) -> Self {
         Self {
-            request: profile,
+            name,
+            request,
         }
     }
 
@@ -24,15 +29,23 @@ impl Task {
     }
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash)]
+impl Displayable for Task {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]
 pub struct Server {
+    name: String,
     current: ResourceProfile,
 }
 
 impl Server {
-    fn with_resource_profile(profile: ResourceProfile) -> Self {
+    pub fn new(name: String, current: ResourceProfile) -> Self {
         Self {
-            current: profile,
+            name,
+            current,
         }
     }
 
@@ -41,16 +54,49 @@ impl Server {
     }
 }
 
+impl Displayable for Server {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+}
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash)]
-pub struct VirtualResource {}
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]
+pub struct VirtualResource {
+    name: String,
+}
+
+impl VirtualResource {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+        }
+    }
+}
+
+impl Displayable for VirtualResource {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]
 pub enum Node {
     VirtualResource(VirtualResource),
     Server(Server),
     Task(Task),
 }
+
+impl Displayable for Node {
+    fn name(&self) -> String {
+        match self {
+            Node::VirtualResource(t) => t.name(),
+            Node::Server(t) => t.name(),
+            Node::Task(t) => t.name(),
+        }
+    }
+}
+
 
 #[derive(Default)]
 pub struct Graph {
@@ -67,13 +113,9 @@ impl Graph {
         self.servers.push(server);
     }
 
-    fn count_nodes(&self) -> usize {
-        self.tasks.len() + self.servers.len()
-    }
-
     pub fn run(&self) -> Vec<Path<Node>> {
         let mut graph = GraphBuilder::<Node>::new();
-        let cluster = Node::VirtualResource(VirtualResource {});
+        let cluster = Node::VirtualResource(VirtualResource::new("Cluster".to_string()));
         let task_count = self.tasks.len();
 
         for task in &self.tasks {
@@ -87,6 +129,7 @@ impl Graph {
         }
 
         for server in &self.servers {
+            dbg!(server);
             graph.add_edge(
                 cluster.clone(),
                 Node::Server(server.clone()),
@@ -95,6 +138,6 @@ impl Graph {
             );
             graph.add_edge(Node::Server(server.clone()), Vertex::Sink, Capacity(task_count as i32), Cost(0));
         }
-        graph.mcmf().1
+        graph.mcmf().2
     }
 }

@@ -2,10 +2,11 @@ use super::graph::Graph;
 use futures::{FutureExt, StreamExt};
 use handlebars::Handlebars;
 use lazy_static::lazy_static;
-use pharos::*;
-use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+
+use tokio::sync::{mpsc};
 use warp::ws::{Message, WebSocket};
+use tokio::sync::watch::Receiver;
+
 
 lazy_static! {
     static ref HBS: Handlebars<'static> = {
@@ -27,7 +28,7 @@ pub async fn get_graph_html() -> Result<impl warp::Reply, warp::reject::Rejectio
     Ok(warp::reply::html(res))
 }
 
-pub async fn graphflow(ws: WebSocket, graph: Arc<Mutex<Pharos<Graph>>>) {
+pub async fn graphflow(ws: WebSocket, mut graph_rx: Receiver<Graph>) {
     let (ws_tx, _) = ws.split();
     let (tx, rx) = mpsc::unbounded_channel();
     tokio::task::spawn(rx.forward(ws_tx).map(|result| {
@@ -35,22 +36,19 @@ pub async fn graphflow(ws: WebSocket, graph: Arc<Mutex<Pharos<Graph>>>) {
             eprintln!("websocket send error: {}", e);
         }
     }));
-    let mut events = graph
-        .lock()
-        .await
-        .observe(Channel::Bounded(3).into())
-        .expect("observe");
-    log::debug!("Monitoring for events");
+
+    let mut graph = graph_rx.recv().await.unwrap();
+
 
     loop {
-        let evt = events.next().await.unwrap();
-        log::debug!("New event detected");
-        if let Err(_disconnected) = tx.send(Ok(Message::text(serde_json::to_string(&evt).unwrap())))
+        if let Err(_disconnected) = tx.send(Ok(Message::text(serde_json::to_string(&graph).unwrap())))
         {
             // The tx is disconnected, our `user_disconnected` code
             // should be happening in another task, nothing more to
             // do here.
         }
+        graph = graph_rx.recv().await.unwrap();
+        log::debug!("New event detected");
     }
 }
 

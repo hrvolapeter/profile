@@ -1,11 +1,11 @@
 use std::cmp::Ordering;
 use std::ops::Add;
 use std::ops::AddAssign;
-use std::ops::Mul;
+
 use std::ops::Sub;
 use std::ops::SubAssign;
 
-#[derive(Default, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Default, Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct ResourceProfile {
     cpu: u8,
     memory: u8,

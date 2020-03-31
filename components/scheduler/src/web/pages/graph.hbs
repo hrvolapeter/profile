@@ -1,35 +1,20 @@
 {{> header}}
 
-<script type="text/javascript">
-// create an array with nodes
-var nodes;
-// create an array with edges
-var edges;
+<h1>Current flow graph</h1>
 
-{{!-- $(function() {
-  url = "/api/schedule/graph/";
-  $.ajax({
-    url: url,
-    async: false,
-    dataType: 'json',
-    success: function(data) {
-      nodes = new vis.DataSet(data.nodes);
-      edges = new vis.DataSet(data.edges);
-      plotNetwork();
-    },
-    error: function(req, err, et) {
-      window.alert(et);
-    }});
-}); --}}
+<div id="flow-graph"></div>
+
+<script type="text/javascript">
 let socket = new WebSocket("ws://" + window.location.host + "/api/schedule/graph/");
 socket.onopen = function(e) {
-  alert("[open] Connection established");
+  {{!-- alert("[open] Connection established"); --}}
 };
 
 socket.onmessage = function(event) {
-    nodes = event.data.nodes
-    edges = even.data.edges
-    plotNetwork()
+    let data = JSON.parse(event.data)
+    let nodes = data.nodes
+    let edges = data.edges
+    plotNetwork(nodes, edges)
 };
 
 socket.onclose = function(event) {
@@ -46,7 +31,7 @@ socket.onerror = function(error) {
   alert(`[error] ${error.message}`);
 };
 
-function plotNetwork() {
+function plotNetwork(nodes, edges) {
   // create a network
   var container = document.getElementById('flow-graph');
   var data = {

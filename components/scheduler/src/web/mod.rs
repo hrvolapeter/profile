@@ -2,14 +2,10 @@ pub mod graph;
 mod handlers;
 
 use self::graph::Graph;
-use pharos::Pharos;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use warp::Filter;
+use tokio::sync::watch::Receiver;
 
-type GraphObsrv = Arc<Mutex<Pharos<Graph>>>;
-
-pub async fn serve(graph: GraphObsrv) {
+pub async fn serve(graph: Receiver<Graph>) {
     let routes = get_schedule_graph()
         .or(get_index())
         .or(get_api_schedule_graph(graph));
@@ -24,7 +20,7 @@ fn get_schedule_graph() -> impl Filter<Extract = impl warp::Reply, Error = warp:
 }
 
 fn get_api_schedule_graph(
-    graph: GraphObsrv,
+    graph: Receiver<Graph>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let graph = warp::any().map(move || graph.clone());
     warp::path!("api" / "schedule" / "graph")

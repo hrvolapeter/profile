@@ -6,4 +6,5 @@ members = [
     "components/benchmark/disk",
     "components/benchmark/memory",
     "components/workload/factor",
+    "components/scheduler",
 ]
