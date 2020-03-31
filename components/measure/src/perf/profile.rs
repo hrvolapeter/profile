@@ -21,9 +21,7 @@ type Record = (String, u128, Option<String>, String);
 impl PerfProfile {
     pub fn from_stream(s: String) -> Result<Vec<Self>, Box<dyn Error>> {
         trace!("Perf stdout: {}", s);
-        let mut rdr = csv::ReaderBuilder::new()
-            .has_headers(false)
-            .from_reader(s.as_bytes());
+        let mut rdr = csv::ReaderBuilder::new().has_headers(false).from_reader(s.as_bytes());
         let res: Vec<Record> = rdr.deserialize().filter_map(Result::ok).collect();
 
         Ok(build_measurements(transpose(res)))
@@ -32,10 +30,7 @@ impl PerfProfile {
 
 fn build_measurements(mut m: HashMap<String, Vec<u128>>) -> Vec<PerfProfile> {
     let keys: Vec<String> = m.keys().cloned().collect();
-    let first_vec = m
-        .keys()
-        .next()
-        .expect("perf should have returned some results");
+    let first_vec = m.keys().next().expect("perf should have returned some results");
     let mut res = vec![];
     for _ in 0..m[first_vec].len() {
         let mut measurement = HashMap::new();
@@ -55,11 +50,7 @@ fn transpose(records: Vec<Record>) -> HashMap<String, Vec<u128>> {
         let counter = res.entry(r.3).or_insert_with(|| vec![]);
         counter.push(r.1)
     }
-    let l = res
-        .values()
-        .next()
-        .expect("Perf should have some results")
-        .len();
+    let l = res.values().next().expect("Perf should have some results").len();
     for (key, val) in &res {
         assert_eq!(l, val.len(), "'{}' different length", key);
     }

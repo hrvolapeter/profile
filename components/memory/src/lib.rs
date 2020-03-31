@@ -1,34 +1,15 @@
 #![feature(test)]
 
-use clap::{App, Arg};
 use rand::Rng;
 use std::error::Error;
-
 use std::thread;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    run_test()
-}
-
-fn run_test() -> Result<(), Box<dyn Error>> {
-    let matches = App::new("memory")
-        .arg(
-            Arg::with_name("size")
-                .short("s")
-                .long("size")
-                .required(true)
-                .takes_value(true),
-        )
-        .get_matches();
-
-    let size = matches
-        .value_of("size")
-        .expect("size provided")
-        .parse::<u32>()?;
-
-    let handles: Vec<_> = (0..num_cpus::get())
-        .map(|_| thread::spawn(move || benchmark(size).unwrap()))
-        .collect();
+/// Arguments:
+///
+/// * `size`: Amount of data wirtten to memory in TODO: (what unit?)
+pub fn run(size: u32) -> Result<(), Box<dyn Error>> {
+    let handles: Vec<_> =
+        (0..num_cpus::get()).map(|_| thread::spawn(move || benchmark(size).unwrap())).collect();
 
     for h in handles {
         h.join().unwrap();

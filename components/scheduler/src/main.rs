@@ -1,27 +1,19 @@
-// #![deny(warnings)]
+#![deny(warnings)]
+#![allow(dead_code)]
 
 mod flow;
 mod web;
 
 use std::error::Error;
-use web::graph::Graph;
-use tokio::sync::watch;
-
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[tokio::main(core_threads = 4)]
 async fn main() -> Result<(), Box<dyn Error>> {
     setup_logger()?;
-    let mut graph = flow::Graph::default();
-    graph.add_server(flow::Server::new("Server 1".to_string(), Default::default()));
-    graph.add_server(flow::Server::new("Server 2".to_string(), Default::default()));
-    graph.add_server(flow::Server::new("Server 3".to_string(), Default::default()));
+    let scheduler = Arc::new(Mutex::new(flow::Scheduler::new()));
 
-    graph.add_task(flow::Task::new("Task 1".to_string(), Default::default()));
-    graph.add_task(flow::Task::new("Task 2".to_string(), Default::default()));
-    graph.add_task(flow::Task::new("Task 3".to_string(), Default::default()));
-    let graph = Graph::from_flow(graph.run());
-    let (_tx, rx) =  watch::channel(graph);
-    let server = web::serve(rx);
+    let server = web::serve(scheduler.clone());
     futures::join!(server);
     Ok(())
 }
@@ -45,4 +37,11 @@ fn setup_logger() -> Result<(), fern::InitError> {
         .chain(std::io::stderr())
         .apply()?;
     Ok(())
+}
+
+mod import {
+    #[allow(warnings)]
+    pub(crate) use {
+        std::collections::HashMap, std::error::Error, std::sync::Arc, tokio::sync::Mutex,
+    };
 }

@@ -1,11 +1,11 @@
+use serde::Serialize;
 use std::cmp::Ordering;
 use std::ops::Add;
 use std::ops::AddAssign;
-
 use std::ops::Sub;
 use std::ops::SubAssign;
 
-#[derive(Default, Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Default, Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize)]
 pub struct ResourceProfile {
     cpu: u8,
     memory: u8,

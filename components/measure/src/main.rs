@@ -30,28 +30,17 @@ mod util;
 async fn main() -> Result<(), Box<dyn Error>> {
     setup_logger()?;
     let matches = App::new("measure")
-        .arg(
-            Arg::with_name("pid")
-                .short('p')
-                .long("pid")
-                .multiple(true)
-                .takes_value(true),
-        )
+        .arg(Arg::with_name("pid").short('p').long("pid").multiple(true).takes_value(true))
         .arg(Arg::with_name("app").multiple(true).last(true))
         .get_matches();
 
     let mut main: Option<Child> = None;
     let pids: Vec<_> = if let Some(x) = matches.values_of("pid") {
-        let pids = x
-            .map(|x| x.parse::<u32>().expect("Pid must be number"))
-            .collect();
+        let pids = x.map(|x| x.parse::<u32>().expect("Pid must be number")).collect();
         debug!("Pids provided, registering {:?}", pids);
         pids
     } else {
-        let args = matches
-            .values_of("app")
-            .expect("Required argument missing")
-            .collect();
+        let args = matches.values_of("app").expect("Required argument missing").collect();
         main = Some(execute_main(args)?);
         vec![main.as_ref().unwrap().id()]
     };
@@ -102,24 +91,9 @@ async fn print_profile(
     perfs: Vec<JoinHandle<Vec<PerfProfile>>>,
     pmaps: Vec<JoinHandle<Vec<PmapProfile>>>,
 ) {
-    let bpfs = join_all(bpfs)
-        .await
-        .into_iter()
-        .filter_map(Result::ok)
-        .flatten()
-        .collect();
-    let pmaps = join_all(pmaps)
-        .await
-        .into_iter()
-        .filter_map(Result::ok)
-        .flatten()
-        .collect();
-    let perfs = join_all(perfs)
-        .await
-        .into_iter()
-        .filter_map(Result::ok)
-        .flatten()
-        .collect();
+    let bpfs = join_all(bpfs).await.into_iter().filter_map(Result::ok).flatten().collect();
+    let pmaps = join_all(pmaps).await.into_iter().filter_map(Result::ok).flatten().collect();
+    let perfs = join_all(perfs).await.into_iter().filter_map(Result::ok).flatten().collect();
     let ap = ApplicationProfile::new(bpfs, perfs, pmaps);
     println!("{}", ApplicationProfile::out(ap).unwrap());
 }

@@ -28,10 +28,7 @@ impl Bpf {
         trace!("Bpf compiled: \"{}\"", bpf_src);
         let mut file = NamedTempFile::new()?;
         writeln!(file, "{}", bpf_src)?;
-        Ok(Bpf {
-            conf: file,
-            receiver,
-        })
+        Ok(Bpf { conf: file, receiver })
     }
 
     pub async fn lop(self) -> Result<Vec<BpfProfile>, Box<dyn Error>> {

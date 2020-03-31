@@ -96,8 +96,8 @@ impl BpfProfile {
     }
 
     fn normalize(mut self, factor: u128) -> Self {
-        self.cache_misses = self.cache_misses * factor;
-        self.cache_references = self.cache_references * factor;
+        self.cache_misses *= factor;
+        self.cache_references *= factor;
 
         self
     }

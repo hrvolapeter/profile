@@ -1,11 +1,10 @@
-use pharos::{Events, Observable, ObserveConfig, Pharos};
-use serde::{Deserialize, Serialize};
+use crate::flow::Displayable;
+use crate::flow::Node as FlowNode;
+use crate::import::*;
 use mcmf::Flow;
 use mcmf::Vertex;
-use crate::flow::Node as FlowNode;
-use crate::flow::Displayable;
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::collections::HashMap;
 
 #[derive(Deserialize, Serialize, Default, Clone, Hash, PartialEq, Eq)]
 pub struct Node {
@@ -18,6 +17,7 @@ pub struct Edge {
     from: u32,
     to: u32,
     label: String,
+    value: u32,
 }
 
 #[derive(Deserialize, Serialize, Default, Clone)]
@@ -27,56 +27,54 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn from_flow(paths: Vec<Flow<FlowNode>>)  -> Self {
+    pub fn from_flow(flows: Vec<Flow<FlowNode>>) -> Self {
         let note_id: AtomicUsize = AtomicUsize::new(0);
         let mut nodes = HashMap::new();
-        let mut edges = vec![];
+        let mut edges = HashMap::<(_, _), Flow<FlowNode>>::new();
 
-        for path in &paths {
-            for vertex in &path.vertices() {
-                if nodes.contains_key(vertex) {
-                    continue;
-                }
-                let label = match vertex {
-                    Vertex::Node(t) => t.name(),
-                    Vertex::Source => "Source".to_string(),
-                    Vertex::Sink => "Sink".to_string(),
-                };
-                nodes.insert(vertex.clone(), Node{
-                    id: note_id.fetch_add(1, Ordering::Relaxed) as u32,
-                    label: label,
-                });
+        let mut insert_node = |node: &Vertex<FlowNode>| {
+            if nodes.contains_key(node) {
+                return;
             }
-            for edge in &path.edges() {
-                dbg!(&edge.a);
-                dbg!(&edge.b);
-                println!("#####");
+            let label = match node {
+                Vertex::Node(t) => t.name(),
+                Vertex::Source => "Source".to_string(),
+                Vertex::Sink => "Sink".to_string(),
+            };
+            nodes.insert(
+                node.clone(),
+                Node { id: note_id.fetch_add(1, Ordering::Relaxed) as u32, label: label },
+            );
+        };
 
-                let a = nodes.get(&edge.a).unwrap();
-                let b = nodes.get(&edge.b).unwrap();
-                edges.push(Edge {
-                    from: a.id,
-                    to: b.id,
-                    label: format!("fl:{} cst:{}", edge.amount, edge.cost),
-                });
+        for flow in flows {
+            insert_node(&flow.a);
+            insert_node(&flow.b);
+            let key = (flow.a.clone(), flow.b.clone());
+            if edges.contains_key(&key) {
+                let mut edge = edges.get_mut(&key).unwrap();
+                edge.amount += flow.amount;
+                edge.cost += flow.cost;
+            } else {
+                edges.insert(key.clone(), flow);
             }
         }
+
         Graph {
-            edges,
-            nodes: nodes.into_iter().map(|(_,v)| v).collect(),
+            edges: edges
+                .into_iter()
+                .map(|(_, flow)| {
+                    let a = nodes.get(&flow.a).unwrap();
+                    let b = nodes.get(&flow.b).unwrap();
+                    Edge {
+                        from: a.id,
+                        to: b.id,
+                        label: format!("fl:{} cst:{}", flow.amount, flow.cost),
+                        value: flow.amount,
+                    }
+                })
+                .collect(),
+            nodes: nodes.into_iter().map(|(_, v)| v).collect(),
         }
     }
 }
-
-pub struct GraphEvent {
-    pharos: Pharos<Graph>,
-}
-
-impl Observable<Graph> for GraphEvent {
-    type Error = pharos::Error;
-
-    fn observe(&mut self, options: ObserveConfig<Graph>) -> Result<Events<Graph>, Self::Error> {
-        self.pharos.observe(options)
-    }
-}
-

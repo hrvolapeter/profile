@@ -1,22 +1,9 @@
-use clap::{App, Arg};
 use rayon::iter::ParallelBridge;
 use rayon::prelude::*;
-use std::env;
 use std::error::Error;
-use std::fs;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let matches = App::new("cpu")
-        .arg(
-            Arg::with_name("path")
-                .short("p")
-                .long("path")
-                .required(true)
-                .takes_value(true),
-        )
-        .get_matches();
-
-    let s = fs::read_to_string(matches.value_of("path").unwrap())?;
+pub fn run() -> Result<(), Box<dyn Error>> {
+    let s = include_str!("./numbers.txt");
     let res: Vec<_> = s
         .lines()
         .par_bridge()

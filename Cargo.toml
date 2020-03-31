@@ -2,9 +2,11 @@
 
 members = [
     "components/measure",
-    "components/benchmark/cpu",
-    "components/benchmark/disk",
-    "components/benchmark/memory",
+    "components/cpu",
+    "components/disk",
+    "components/memory",
+    "components/network",
+    "components/benchmark",
     "components/workload/factor",
     "components/scheduler",
 ]

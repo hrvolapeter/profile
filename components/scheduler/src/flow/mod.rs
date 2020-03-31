@@ -1,10 +1,9 @@
-
 mod resource_profile;
 
 use self::resource_profile::ResourceProfile;
-
-
-use mcmf::{GraphBuilder, Vertex, Cost, Capacity, Path};
+use mcmf::{Capacity, Cost, Flow, GraphBuilder, Vertex};
+use serde::Serialize;
+use tokio::sync::watch;
 
 pub trait Displayable {
     fn name(&self) -> String;
@@ -18,10 +17,7 @@ pub struct Task {
 
 impl Task {
     pub fn new(name: String, request: ResourceProfile) -> Self {
-        Self {
-            name,
-            request,
-        }
+        Self { name, request }
     }
 
     fn get_request(&self) -> &ResourceProfile {
@@ -35,7 +31,7 @@ impl Displayable for Task {
     }
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug, Serialize)]
 pub struct Server {
     name: String,
     current: ResourceProfile,
@@ -43,10 +39,7 @@ pub struct Server {
 
 impl Server {
     pub fn new(name: String, current: ResourceProfile) -> Self {
-        Self {
-            name,
-            current,
-        }
+        Self { name, current }
     }
 
     fn get_request(&self) -> &ResourceProfile {
@@ -60,7 +53,6 @@ impl Displayable for Server {
     }
 }
 
-
 #[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]
 pub struct VirtualResource {
     name: String,
@@ -68,9 +60,7 @@ pub struct VirtualResource {
 
 impl VirtualResource {
     pub fn new(name: String) -> Self {
-        Self {
-            name,
-        }
+        Self { name }
     }
 }
 
@@ -97,14 +87,25 @@ impl Displayable for Node {
     }
 }
 
+type Flows = Vec<Flow<Node>>;
 
-#[derive(Default)]
-pub struct Graph {
+pub struct Scheduler {
     tasks: Vec<Task>,
     servers: Vec<Server>,
+    notif_channel: (watch::Sender<Flows>, watch::Receiver<Flows>),
+    flows: Flows,
 }
 
-impl Graph {
+impl Scheduler {
+    pub fn new() -> Self {
+        Self {
+            notif_channel: watch::channel(vec![]),
+            tasks: Default::default(),
+            servers: Default::default(),
+            flows: Default::default(),
+        }
+    }
+
     pub fn add_task(&mut self, task: Task) {
         self.tasks.push(task);
     }
@@ -113,8 +114,18 @@ impl Graph {
         self.servers.push(server);
     }
 
-    pub fn run(&self) -> Vec<Path<Node>> {
-        let mut graph = GraphBuilder::<Node>::new();
+    pub fn get_servers(&self) -> &Vec<Server> {
+        &self.servers
+    }
+
+    fn get_schedule(&mut self) {
+        let graph = self.build_flow_graph();
+        let (_, _, flows) = graph.mcmf();
+        self.flows = flows;
+    }
+
+    fn build_flow_graph(&self) -> GraphBuilder<Node> {
+        let mut graph = GraphBuilder::new();
         let cluster = Node::VirtualResource(VirtualResource::new("Cluster".to_string()));
         let task_count = self.tasks.len();
 
@@ -129,15 +140,23 @@ impl Graph {
         }
 
         for server in &self.servers {
-            dbg!(server);
             graph.add_edge(
                 cluster.clone(),
                 Node::Server(server.clone()),
                 Capacity(task_count as i32),
                 Cost(server.get_request().inner_product() as i32),
             );
-            graph.add_edge(Node::Server(server.clone()), Vertex::Sink, Capacity(task_count as i32), Cost(0));
+            graph.add_edge(
+                Node::Server(server.clone()),
+                Vertex::Sink,
+                Capacity(task_count as i32),
+                Cost(0),
+            );
         }
-        graph.mcmf().2
+        graph
+    }
+
+    pub fn subscribe(&self) -> watch::Receiver<Flows> {
+        self.notif_channel.1.clone()
     }
 }

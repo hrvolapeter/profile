@@ -1,9 +1,9 @@
 use log::debug;
 use log::trace;
-use log::warn;
+
 use regex::Regex;
 use std::error::Error;
-use std::io::Write;
+
 use std::process::Stdio;
 use std::sync::mpsc::Receiver;
 use std::{thread, time};

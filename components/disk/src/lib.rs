@@ -1,4 +1,3 @@
-use clap::{App, Arg};
 use rand::Rng;
 use ring::digest::{Context, Digest, SHA256};
 use std::error::Error;
@@ -9,38 +8,12 @@ use std::io::Read;
 use std::io::Write;
 use std::thread;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let matches = App::new("disk")
-        .arg(
-            Arg::with_name("path")
-                .short("p")
-                .long("path")
-                .required(true)
-                .multiple(true)
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("size")
-                .short("s")
-                .long("size")
-                .required(true)
-                .takes_value(true),
-        )
-        .get_matches();
-
-    let paths = matches
-        .values_of("path")
-        .expect("required arg not provided");
-
-    let size = matches
-        .value_of("size")
-        .expect("size provided")
-        .parse::<u32>()?;
-
+pub fn run(paths: Vec<&str>, size: u32) -> Result<(), Box<dyn Error>> {
     let handles: Vec<_> = paths
+        .iter()
         .clone()
         .map(|x| {
-            let x = x.to_string();
+            let x = (*x).to_string();
             let size = size.clone();
             thread::spawn(move || benchmark_write(x, size).unwrap())
         })
@@ -51,8 +24,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let handles: Vec<_> = paths
+        .iter()
         .map(|x| {
-            let x = x.to_string();
+            let x = (*x).to_string();
             thread::spawn(move || benchmark_read(x).unwrap())
         })
         .collect();
@@ -73,11 +47,7 @@ fn benchmark_write(p: String, size: u32) -> Result<(), Box<dyn Error>> {
     }
     let string: String = vector.iter().collect();
 
-    let file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)
-        .open(p)?;
+    let file = OpenOptions::new().create(true).write(true).truncate(true).open(p)?;
     let mut wrt = BufWriter::new(file);
     for _ in 0..100 {
         wrt.write_all(string.as_bytes())?;
