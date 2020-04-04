@@ -7,10 +7,10 @@ use std::ops::SubAssign;
 
 #[derive(Default, Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize)]
 pub struct ResourceProfile {
-    cpu: u8,
-    memory: u8,
-    network: u8,
-    disk: u8,
+    pub cpu: u8,
+    pub memory: u8,
+    pub network: u8,
+    pub disk: u8,
 }
 
 impl ResourceProfile {

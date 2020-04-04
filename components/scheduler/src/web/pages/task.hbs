@@ -1,8 +1,8 @@
 {{> header}}
-<h1>Server</h1>
+<h1>Task</h1>
 
-<h3>Maximum profile</h3>
-<p>Measured by resource specific benchmark run when adding a new server to cluster</p>
+<h3>Task request</h3>
+<p>Measured from previous runs of the task</p>
 <table class="table">
 <thead>
   <tr>
@@ -10,13 +10,13 @@
   </tr>
 </thead>
 <tbody>
-{{#each servers}}
-  <tr><td><b>{{name}}</b></td><td>{{current.cpu}}</td><td>{{current.disk}}</td><td>{{current.network}}</td><td>{{current.memory}}</td></tr>
+{{#each tasks}}
+  <tr><td><b>{{name}}</b></td><td>{{request.cpu}}</td><td>{{request.disk}}</td><td>{{request.network}}</td><td>{{request.memory}}</td></tr>
 {{/each}}
 </tbody>
 </table>
 
-<h3>Add new server</h3>
+<h3>Add new task</h3>
 <form action="" method="POST" id="serverForm">
   <div class="form-group">
     <label for="name">Name</label>
@@ -24,14 +24,22 @@
     <small class="form-text text-muted">Will be used in graph as id</small>
   </div>
   <div class="form-group">
-    <label for="username">Username</label>
-    <input type="text" class="form-control" name="username" placeholder="Username">
+    <label for="cpu">cpu</label>
+    <input type="text" class="form-control" name="cpu" placeholder="Cpu">
   </div>
-  <div class="form-check">
-    <label for="address">SSH address</label>
-    <input type="text" class="form-control" id="address" name="address" placeholder="Address">
-    <small class="form-text text-muted">Key must be stored in `ssh-agent`</small>
+  <div class="form-group">
+    <label for="disk">disk</label>
+    <input type="text" class="form-control" name="disk" placeholder="Disk">
   </div>
+  <div class="form-group">
+    <label for="memory">memory</label>
+    <input type="text" class="form-control" name="memory" placeholder="Memory">
+  </div>
+  <div class="form-group">
+    <label for="network">network</label>
+    <input type="text" class="form-control" name="network" placeholder="Network">
+  </div>
+ 
   <input type="submit" id="submit" class="btn btn-primary" value="Submit">
 </form>
 <script>
@@ -51,7 +59,7 @@
             let data = ConvertFormToJSON($("#serverForm"));
             console.log(data);
             let xhttp = new XMLHttpRequest();
-            xhttp.open("POST", "/schedule/server", false);            
+            xhttp.open("POST", "/schedule/task", false);            
             xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             xhttp.send(JSON.stringify(data));
             location.reload();

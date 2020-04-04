@@ -17,7 +17,9 @@ pub async fn serve(scheduler: Scheduler) {
         .or(get_index())
         .or(get_api_schedule_graph(flow_subscription))
         .or(get_server(scheduler.clone()))
-        .or(post_server(scheduler.clone()));
+        .or(post_server(scheduler.clone()))
+        .or(get_task(scheduler.clone()))
+        .or(post_task(scheduler.clone()));
     warp::serve(routes).run(([0, 0, 0, 0], 8080)).await;
 }
 
@@ -46,7 +48,7 @@ fn get_server(
     warp::get()
         .and(warp::path!("schedule" / "server"))
         .and(scheduler)
-        .and_then(|scheduler| handlers::get_server(scheduler))
+        .and_then(handlers::get_server)
 }
 
 fn post_server(
@@ -57,5 +59,26 @@ fn post_server(
         .and(warp::path!("schedule" / "server"))
         .and(scheduler)
         .and(warp::body::json())
-        .and_then(|scheduler, json: HashMap<String, String>| handlers::post_server(scheduler, json))
+        .and_then(handlers::post_server)
+}
+
+fn get_task(
+    scheduler: Scheduler,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let scheduler = warp::any().map(move || scheduler.clone());
+    warp::get()
+        .and(warp::path!("schedule" / "task"))
+        .and(scheduler)
+        .and_then(handlers::get_task)
+}
+
+fn post_task(
+    scheduler: Scheduler,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let scheduler = warp::any().map(move || scheduler.clone());
+    warp::post()
+        .and(warp::path!("schedule" / "task"))
+        .and(scheduler)
+        .and(warp::body::json())
+        .and_then(handlers::post_task)
 }

@@ -43,7 +43,7 @@ impl Graph {
             };
             nodes.insert(
                 node.clone(),
-                Node { id: note_id.fetch_add(1, Ordering::Relaxed) as u32, label: label },
+                Node { id: note_id.fetch_add(1, Ordering::Relaxed) as u32, label },
             );
         };
 

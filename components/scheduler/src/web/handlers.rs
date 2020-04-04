@@ -74,3 +74,29 @@ pub async fn post_server(
     scheduler.add_server(server);
     Ok(warp::reply::reply())
 }
+
+pub async fn get_task(scheduler: Scheduler) -> Result<impl warp::Reply, warp::reject::Rejection> {
+    let source_template = include_str!("./pages/task.hbs");
+    let scheduler = scheduler.lock().await;
+    let mut map = HashMap::<&'static str, _>::new();
+    map.insert("tasks", scheduler.get_tasks());
+
+    let res = HBS.render_template(&source_template[..], &map).unwrap();
+    Ok(warp::reply::html(res))
+}
+
+pub async fn post_task(
+    scheduler: Scheduler,
+    form: HashMap<String, String>,
+) -> Result<impl warp::Reply, warp::reject::Rejection> {
+    let mut scheduler = scheduler.lock().await;
+    let request = flow::ResourceProfile {
+        cpu: form["cpu"].parse::<u8>().unwrap(),
+        memory: form["memory"].parse::<u8>().unwrap(),
+        disk: form["disk"].parse::<u8>().unwrap(),
+        network: form["network"].parse::<u8>().unwrap(),
+    };
+    let task = flow::Task::new(form["name"].clone(), request);
+    scheduler.add_task(task);
+    Ok(warp::reply::reply())
+}

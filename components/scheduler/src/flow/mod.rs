@@ -1,6 +1,6 @@
 mod resource_profile;
 
-use self::resource_profile::ResourceProfile;
+pub use self::resource_profile::ResourceProfile;
 use mcmf::{Capacity, Cost, Flow, GraphBuilder, Vertex};
 use serde::Serialize;
 use tokio::sync::watch;
@@ -9,7 +9,7 @@ pub trait Displayable {
     fn name(&self) -> String;
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug, Serialize)]
 pub struct Task {
     request: ResourceProfile,
     name: String,
@@ -42,7 +42,7 @@ impl Server {
         Self { name, current }
     }
 
-    fn get_request(&self) -> &ResourceProfile {
+    fn get_current(&self) -> &ResourceProfile {
         &self.current
     }
 }
@@ -93,7 +93,6 @@ pub struct Scheduler {
     tasks: Vec<Task>,
     servers: Vec<Server>,
     notif_channel: (watch::Sender<Flows>, watch::Receiver<Flows>),
-    flows: Flows,
 }
 
 impl Scheduler {
@@ -102,26 +101,31 @@ impl Scheduler {
             notif_channel: watch::channel(vec![]),
             tasks: Default::default(),
             servers: Default::default(),
-            flows: Default::default(),
         }
     }
 
     pub fn add_task(&mut self, task: Task) {
         self.tasks.push(task);
+        self.schedule();
+    }
+
+    pub fn get_tasks(&self) -> &Vec<Task> {
+        &self.tasks
     }
 
     pub fn add_server(&mut self, server: Server) {
         self.servers.push(server);
+        self.schedule();
     }
 
     pub fn get_servers(&self) -> &Vec<Server> {
         &self.servers
     }
 
-    fn get_schedule(&mut self) {
+    fn schedule(&mut self) {
         let graph = self.build_flow_graph();
         let (_, _, flows) = graph.mcmf();
-        self.flows = flows;
+        let _ = self.notif_channel.0.broadcast(flows);
     }
 
     fn build_flow_graph(&self) -> GraphBuilder<Node> {
@@ -144,7 +148,7 @@ impl Scheduler {
                 cluster.clone(),
                 Node::Server(server.clone()),
                 Capacity(task_count as i32),
-                Cost(server.get_request().inner_product() as i32),
+                Cost(server.get_current().inner_product() as i32 + 1),
             );
             graph.add_edge(
                 Node::Server(server.clone()),
