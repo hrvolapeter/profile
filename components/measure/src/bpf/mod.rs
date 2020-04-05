@@ -6,8 +6,8 @@ use log::warn;
 use std::error::Error;
 use std::io::Write;
 use std::process::Stdio;
-use std::sync::mpsc::Receiver;
 use tempfile::NamedTempFile;
+use tokio::sync::mpsc::Receiver;
 
 use tokio::process::Command;
 
@@ -21,7 +21,7 @@ pub struct Bpf {
 }
 
 impl Bpf {
-    pub fn new(pids: &[u32], receiver: Receiver<bool>) -> Result<Bpf, Box<dyn Error>> {
+    pub fn new(pids: &[u64], receiver: Receiver<bool>) -> Result<Bpf, Box<dyn Error>> {
         let pids: Vec<_> = pids.iter().map(|x| format!("pid == {}", x)).collect();
         let pids = pids.join(" || ");
         let bpf_src = String::from(BPF_SRC).replace("${PID}", &pids[..]);
@@ -31,7 +31,7 @@ impl Bpf {
         Ok(Bpf { conf: file, receiver })
     }
 
-    pub async fn lop(self) -> Result<Vec<BpfProfile>, Box<dyn Error>> {
+    pub async fn lop(mut self) -> Result<Vec<BpfProfile>, Box<dyn Error>> {
         let mut res = vec![];
         while self.receiver.try_recv().is_err() {
             let cmd = Command::new("/usr/bin/bpftrace")

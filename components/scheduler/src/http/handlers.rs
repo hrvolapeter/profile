@@ -70,9 +70,45 @@ pub async fn post_server(
     form: HashMap<String, String>,
 ) -> Result<impl warp::Reply, warp::reject::Rejection> {
     let mut scheduler = scheduler.lock().await;
+    // bench_server(&form["name"]);
     let server = flow::Server::new(form["name"].clone(), Default::default());
     scheduler.add_server(server);
     Ok(warp::reply::reply())
+}
+
+async fn scp(
+    from_host: Option<&str>,
+    from: &Path,
+    to_host: Option<&str>,
+    to: &Path,
+) -> Result<(), Box<dyn Error>> {
+    use tokio::process::Command;
+    let from = if let Some(from_host) = from_host {
+        format!("{}:{}", from_host, from.display())
+    } else {
+        from.display().to_string()
+    };
+    let to = if let Some(to_host) = to_host {
+        format!("{}:{}", to_host, to.display())
+    } else {
+        to.display().to_string()
+    };
+
+    Command::new("scp").arg(from).arg(to).spawn()?.await?;
+    Ok(())
+}
+
+async fn ssh(host: &str, cmd: &str, sudo_pass: &str) -> Result<String, Box<dyn Error>> {
+    use tokio::process::Command;
+
+    let res = Command::new("ssh")
+        .arg(host)
+        .arg(format!("'echo {} | sudo -S {}'", sudo_pass, cmd))
+        .spawn()?
+        .wait_with_output()
+        .await?;
+
+    Ok(String::from_utf8_lossy(&res.stdout).to_string())
 }
 
 pub async fn get_task(scheduler: Scheduler) -> Result<impl warp::Reply, warp::reject::Rejection> {

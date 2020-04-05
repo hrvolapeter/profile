@@ -27,6 +27,7 @@ pub struct ApplicationProfile {
 
 impl ApplicationProfile {
     pub fn new(bpf: Vec<BpfProfile>, perf: Vec<PerfProfile>, pmap: Vec<PmapProfile>) -> Vec<Self> {
+        assert_eq!(bpf.len(), perf.len(), "Should have equal number of profiels");
         izip!(bpf, perf, pmap)
             .map(|(x, y, z)| ApplicationProfile {
                 memory: z.memory,

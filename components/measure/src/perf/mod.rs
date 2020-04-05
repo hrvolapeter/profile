@@ -1,11 +1,11 @@
 use self::profile::PerfProfile;
-use crate::util::stop_process;
 use log::debug;
 use log::error;
 use std::error::Error;
 use std::process::Stdio;
-use std::sync::mpsc::Receiver;
 use tokio::process::Command;
+use tokio::sync::mpsc::Receiver;
+use tokio::process::Child;
 
 pub mod profile;
 
@@ -20,30 +20,38 @@ pub struct Perf {
 }
 
 impl Perf {
-    pub fn new(pids: &[u32], receiver: Receiver<bool>) -> Self {
+    pub fn new(pids: &[u64], receiver: Receiver<bool>) -> Self {
         let pids: Vec<_> = pids.iter().map(|x| x.to_string()).collect();
         let pids = pids.join(",");
         Self { pids, receiver }
     }
 
-    pub async fn run(self) -> Result<Vec<PerfProfile>, Box<dyn Error>> {
+    pub async fn run(mut self) -> Result<Vec<PerfProfile>, Box<dyn Error>> {
         let cmd = Command::new("/usr/bin/perf")
             .args(PERF_ARGS)
             .arg(format!("-p {}", &self.pids[..]))
-            .arg("-I 5000")
+            .arg("-I 10000")
             .arg("-x,")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
 
-        self.receiver.recv()?;
+        self.receiver.recv().await;
         stop_process(&cmd)?;
 
         let out = cmd.wait_with_output().await?;
         if !out.status.success() {
-            error!("Perf exited with error {:?}", out);
+            error!("Perf exited with error: {:?}", out.status);
         }
         debug!("Perfs exited");
         PerfProfile::from_stream(String::from_utf8_lossy(&out.stderr).to_string())
     }
+}
+
+fn stop_process(process: &Child) -> Result<(), impl Error> {
+    use nix::sys::signal::{kill, Signal};
+use nix::unistd::Pid;
+
+    let pid = Pid::from_raw(process.id() as i32);
+    kill(pid, Signal::SIGTERM)
 }

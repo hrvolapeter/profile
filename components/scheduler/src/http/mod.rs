@@ -66,10 +66,7 @@ fn get_task(
     scheduler: Scheduler,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let scheduler = warp::any().map(move || scheduler.clone());
-    warp::get()
-        .and(warp::path!("schedule" / "task"))
-        .and(scheduler)
-        .and_then(handlers::get_task)
+    warp::get().and(warp::path!("schedule" / "task")).and(scheduler).and_then(handlers::get_task)
 }
 
 fn post_task(

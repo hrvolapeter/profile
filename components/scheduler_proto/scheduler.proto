@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package scheduler;
+
+service Scheduler {
+    // Registgers new server in scheduler
+    rpc RegisterServer(RegistrationRequest) returns (RegistrationReply) {};
+}
+
+message RegistrationRequest {
+    string MachineId = 1;
+}
+
+message RegistrationReply {
+    bool ShouldBenchmark = 1;
+}

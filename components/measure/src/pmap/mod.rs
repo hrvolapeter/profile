@@ -1,14 +1,11 @@
 use log::debug;
 use log::trace;
-
 use regex::Regex;
 use std::error::Error;
-
 use std::process::Stdio;
-use std::sync::mpsc::Receiver;
 use std::{thread, time};
-
 use tokio::process::Command;
+use tokio::sync::mpsc::Receiver;
 
 pub struct Pmap {
     pids: Vec<String>,
@@ -16,16 +13,16 @@ pub struct Pmap {
 }
 
 impl Pmap {
-    pub fn new(pids: &[u32], receiver: Receiver<bool>) -> Result<Pmap, Box<dyn Error>> {
+    pub fn new(pids: &[u64], receiver: Receiver<bool>) -> Result<Pmap, Box<dyn Error>> {
         let pids: Vec<_> = pids.iter().map(|x| x.to_string()).collect();
         Ok(Self { pids, receiver })
     }
 
-    pub async fn lop(self) -> Result<Vec<PmapProfile>, Box<dyn Error>> {
+    pub async fn lop(mut self) -> Result<Vec<PmapProfile>, Box<dyn Error>> {
         let mut res = vec![];
         let regex = Regex::new(r"total kB\s+(\d+)").unwrap();
         while self.receiver.try_recv().is_err() {
-            thread::sleep(time::Duration::from_secs(5));
+            thread::sleep(time::Duration::from_secs(10));
 
             let cmd = Command::new("/usr/bin/pmap")
                 .arg("-x")

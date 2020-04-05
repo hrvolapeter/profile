@@ -7,6 +7,6 @@ members = [
     "components/memory",
     "components/network",
     "components/benchmark",
-    "components/workload/factor",
     "components/scheduler",
+    "components/scheduler_agent",
 ]

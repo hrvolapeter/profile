@@ -11,3 +11,6 @@ disk = {path = "../disk"}
 cpu = {path = "../cpu"}
 network = {path = "../network"}
 memory = {path = "../memory"}
+measure = {path = "../measure"}
+futures = "0.3"
+tokio = {version = "0.2", features = ["full"] }
