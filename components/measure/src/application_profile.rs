@@ -6,28 +6,27 @@ use itertools::izip;
 use serde::Serialize;
 use std::error::Error;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 pub struct ApplicationProfile {
-    cache_misses: u128,
-    cache_references: u128,
-    vfs_write: u128,
-    vfs_read: u128,
-    tcp_send_bytes: u128,
-    tcp_recv_bytes: u128,
+    pub cache_misses: u64,
+    pub cache_references: u64,
+    pub vfs_write: u64,
+    pub vfs_read: u64,
+    pub tcp_send_bytes: u64,
+    pub tcp_recv_bytes: u64,
     //
-    l1_dcache_loads: u128,
-    l1_dcache_load_misses: u128,
-    l1_icache_load_misses: u128,
-    llc_load_misses: u128,
-    llc_loads: u128,
-    cycles: u128,
-    instructions: u128,
-    memory: u128,
+    pub l1_dcache_loads: u64,
+    pub l1_dcache_load_misses: u64,
+    pub l1_icache_load_misses: u64,
+    pub llc_load_misses: u64,
+    pub llc_loads: u64,
+    pub cycles: u64,
+    pub instructions: u64,
+    pub memory: u64,
 }
 
 impl ApplicationProfile {
     pub fn new(bpf: Vec<BpfProfile>, perf: Vec<PerfProfile>, pmap: Vec<PmapProfile>) -> Vec<Self> {
-        assert_eq!(bpf.len(), perf.len(), "Should have equal number of profiels");
         izip!(bpf, perf, pmap)
             .map(|(x, y, z)| ApplicationProfile {
                 memory: z.memory,

@@ -5,17 +5,17 @@ use std::error::Error;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResCount {
     #[serde(alias = "cache-misses:10000")]
-    cache_misses: Option<u128>,
+    cache_misses: Option<u64>,
     #[serde(alias = "cache-references:10000")]
-    cache_references: u128,
+    cache_references: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResSum {
-    vfs_write: Option<u128>,
-    vfs_read: Option<u128>,
-    tcp_send_bytes: Option<u128>,
-    tcp_recv_bytes: Option<u128>,
+    vfs_write: Option<u64>,
+    vfs_read: Option<u64>,
+    tcp_send_bytes: Option<u64>,
+    tcp_recv_bytes: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,22 +35,22 @@ pub enum Entry {
 
 #[derive(Debug)]
 pub struct BpfProfile {
-    pub cache_misses: u128,
-    pub cache_references: u128,
-    pub vfs_write: u128,
-    pub vfs_read: u128,
-    pub tcp_send_bytes: u128,
-    pub tcp_recv_bytes: u128,
+    pub cache_misses: u64,
+    pub cache_references: u64,
+    pub vfs_write: u64,
+    pub vfs_read: u64,
+    pub tcp_send_bytes: u64,
+    pub tcp_recv_bytes: u64,
 }
 
 #[derive(Debug, Default)]
 pub struct BpfProfileBuilder {
-    pub cache_misses: Option<u128>,
-    pub cache_references: Option<u128>,
-    pub vfs_write: Option<u128>,
-    pub vfs_read: Option<u128>,
-    pub tcp_send_bytes: Option<u128>,
-    pub tcp_recv_bytes: Option<u128>,
+    pub cache_misses: Option<u64>,
+    pub cache_references: Option<u64>,
+    pub vfs_write: Option<u64>,
+    pub vfs_read: Option<u64>,
+    pub tcp_send_bytes: Option<u64>,
+    pub tcp_recv_bytes: Option<u64>,
 }
 
 impl BpfProfileBuilder {
@@ -95,7 +95,7 @@ impl BpfProfile {
         Ok(out.build().normalize(10_000))
     }
 
-    fn normalize(mut self, factor: u128) -> Self {
+    fn normalize(mut self, factor: u64) -> Self {
         self.cache_misses *= factor;
         self.cache_references *= factor;
 

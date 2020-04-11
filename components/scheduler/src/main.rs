@@ -1,8 +1,10 @@
 #![deny(warnings)]
 #![allow(dead_code)]
+#![feature(async_closure)]
+#![feature(try_trait)]
 
-mod flow;
-mod http;
+mod scheduler;
+mod webui;
 mod rpc;
 
 use futures_util::future::FutureExt;
@@ -14,13 +16,13 @@ use tonic::transport::Server;
 #[tokio::main(core_threads = 4)]
 async fn main() -> Result<(), Box<dyn Error>> {
     setup_logger()?;
-    let scheduler = Arc::new(Mutex::new(flow::Scheduler::new()));
+    let scheduler = Arc::new(Mutex::new(scheduler::Scheduler::new()));
 
-    let http_server = http::serve(scheduler.clone());
+    let http_server = webui::serve(scheduler.clone());
 
     let addr = "[::]:50051".parse()?;
     let rpc_server = Server::builder()
-        .add_service(rpc::SchedulerServer::new(rpc::SchedulerService::default()))
+        .add_service(rpc::SchedulerServer::new(rpc::SchedulerService::new(scheduler.clone())))
         .serve(addr)
         .map(|_| ());
 
@@ -45,6 +47,8 @@ fn setup_logger() -> Result<(), fern::InitError> {
             ))
         })
         .chain(std::io::stderr())
+        .level(log::LevelFilter::Warn)
+        .level_for("scheduler", log::LevelFilter::Trace)
         .apply()?;
     Ok(())
 }
@@ -52,7 +56,8 @@ fn setup_logger() -> Result<(), fern::InitError> {
 mod import {
     #[allow(warnings)]
     pub(crate) use {
-        std::collections::HashMap, std::error::Error, std::path::Path, std::sync::Arc,
-        tokio::sync::Mutex,
+        log::debug, std::collections::HashMap, std::path::Path, std::sync::Arc,
+        tokio::sync::Mutex, serde::Serialize, serde::Deserialize, log::error,
     };
+    pub type BoxResult<T> = Result<T, Box<dyn std::error::Error>>;
 }

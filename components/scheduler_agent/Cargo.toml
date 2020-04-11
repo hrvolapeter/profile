@@ -8,10 +8,13 @@ edition = "2018"
 
 [dependencies]
 benchmark = { path = "../benchmark"}
+measure = { path = "../measure"}
 tokio = { version = "0.2", features = ["full"] }
 prost = "0.6"
 tonic = "0.2"
 machine-id = "0.3.0"
+openssl = { version = '0.10', features = ["vendored"] }
+futures = "0.3"
 
 [build-dependencies]
 tonic-build = "0.2"

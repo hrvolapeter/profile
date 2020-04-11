@@ -5,12 +5,59 @@ package scheduler;
 service Scheduler {
     // Registgers new server in scheduler
     rpc RegisterServer(RegistrationRequest) returns (RegistrationReply) {};
+    // If scheduler requests benchmark during registration send back the results
+    rpc SubmitBenchmark(BenchmarkSubmitRequest) returns (BenchmarkSubmitReply) {};
+    // Listen for scheduling events
+    rpc SubscribeTasks(SubscribeTasksRequest) returns (stream SubscribeTasksReply) {};
 }
 
-message RegistrationRequest {
+message SubscribeTasksRequest {
     string MachineId = 1;
 }
 
+message SubscribeTasksReply {
+    message Task {
+        string image = 1;
+        bool isProfiled = 2;
+    }
+    enum State {
+        run = 0;
+        remove = 1;
+    }
+    Task task = 1;
+    State state = 2;
+}
+
+message BenchmarkSubmitRequest {
+    string machineId = 1;
+    Profile profile = 2;
+}
+
+message BenchmarkSubmitReply {
+
+}
+
+message RegistrationRequest {
+    string machineId = 1;
+}
+
 message RegistrationReply {
-    bool ShouldBenchmark = 1;
+    bool shouldBenchmark = 1;
+}
+
+message Profile {
+    uint64 cacheMisses = 1;
+    uint64 cacheReferences = 2;
+    uint64 vfsWrite = 3;
+    uint64 vfsRead = 4;
+    uint64 tcpSendBytes = 5;
+    uint64 tcpRecvBytes = 6;
+    uint64 l1DcacheLoads = 7;
+    uint64 l1DcacheLoadMisses = 8;
+    uint64 l1IcacheLoadMisses = 9;
+    uint64 llcLoadMisses = 10;
+    uint64 llcLoads = 11;
+    uint64 cycles = 12;
+    uint64 instructions = 13;
+    uint64 memory = 14;
 }

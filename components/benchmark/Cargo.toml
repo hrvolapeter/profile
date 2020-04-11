@@ -14,3 +14,4 @@ memory = {path = "../memory"}
 measure = {path = "../measure"}
 futures = "0.3"
 tokio = {version = "0.2", features = ["full"] }
+openssl = { version = '0.10', features = ["vendored"] }

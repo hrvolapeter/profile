@@ -244,6 +244,20 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
-        }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'cost_flow'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--package=cost_flow"
+                ],
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
     ]
 }

@@ -1,23 +1,23 @@
 #![feature(thread_id_value)]
 #![deny(warnings)]
 
-pub mod application_profile;
+mod application_profile;
 mod bpf;
 mod perf;
 mod pmap;
 
-use crate::application_profile::ApplicationProfile;
+pub use crate::application_profile::ApplicationProfile;
 use crate::bpf::Bpf;
 use crate::perf::Perf;
 use crate::pmap::Pmap;
+use fern::colors::ColoredLevelConfig;
+use futures::executor::block_on;
 use log::debug;
 use std::error::Error;
 use std::sync::Mutex;
 use std::thread;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::Sender;
-use futures::executor::block_on;
-use fern::colors::ColoredLevelConfig;
 
 pub async fn run(
     pids: Option<Vec<u64>>,

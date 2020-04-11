@@ -7,15 +7,15 @@ use std::ops::SubAssign;
 
 #[derive(Default, Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize)]
 pub struct ResourceProfile {
-    pub cpu: u8,
-    pub memory: u8,
-    pub network: u8,
-    pub disk: u8,
+    pub cpu: u64,
+    pub memory: u64,
+    pub network: u64,
+    pub disk: u64,
 }
 
 impl ResourceProfile {
     pub fn inner_product(&self) -> u64 {
-        (self.cpu + self.memory + self.network + self.disk) as u64
+        self.cpu + self.memory + self.network + self.disk
     }
 }
 
@@ -68,16 +68,3 @@ impl Ord for ResourceProfile {
         self.inner_product().cmp(&other.inner_product())
     }
 }
-
-// impl Mul for ResourceProfile {
-//     // The multiplication of rational numbers is a closed operation.
-//     type Output = Self;
-
-//     fn mul(self, rhs: u64) -> Self {
-//         self.cpu *= rhs;
-//         self.memory *= rhs;
-//         self.network *= rhs;
-//         self.disk *= rhs;
-//         self
-//     }
-// }

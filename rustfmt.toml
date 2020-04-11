@@ -1,5 +1,7 @@
 
 edition = "2018"
+version = "Two"
+merge_derives = true
 use_small_heuristics = "Max"
 # Prevent carriage returns
 newline_style = "Unix"

@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 reqwest = "0.10.4"
-futures = "0.3.4"
+futures = "0.3"

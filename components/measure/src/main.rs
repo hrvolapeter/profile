@@ -1,10 +1,10 @@
 #![deny(warnings)]
 
 use clap::{App, Arg};
-use measure::application_profile::ApplicationProfile;
+use log::debug;
+use measure::ApplicationProfile;
 use std::error::Error;
 use std::process::Command;
-use log::debug;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -17,7 +17,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .values_of("pid")
         .map(|pids| pids.map(|x| x.parse::<u64>().expect("Pid must be number")).collect());
 
-    let args: Option<Vec<String>> = matches.values_of("app").map(|args| args.map(|x| x.to_string()).collect());
+    let args: Option<Vec<String>> =
+        matches.values_of("app").map(|args| args.map(|x| x.to_string()).collect());
     debug!("args : {:?}", args);
     if let Some(args) = args {
         let f = Box::new(move || {

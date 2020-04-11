@@ -50,7 +50,7 @@ pub fn from_hashmap(input: TokenStream) -> TokenStream {
     let tokens = quote! {
 
         impl #impl_generics FromHashmap<#name> for #name #ty_generics #where_clause {
-            fn from_hashmap(mut hm: ::std::collections::HashMap<String, u128>) -> #name {
+            fn from_hashmap(mut hm: ::std::collections::HashMap<String, u64>) -> #name {
                 // start with the default implementation
                 let mut settings = #name::default();
                 #(

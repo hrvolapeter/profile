@@ -1,5 +1,5 @@
-use crate::flow::Displayable;
-use crate::flow::Node as FlowNode;
+use crate::scheduler::Displayable;
+use crate::scheduler;
 use crate::import::*;
 use mcmf::Flow;
 use mcmf::Vertex;
@@ -17,7 +17,7 @@ pub struct Edge {
     from: u32,
     to: u32,
     label: String,
-    value: u32,
+    value: u64,
 }
 
 #[derive(Deserialize, Serialize, Default, Clone)]
@@ -27,12 +27,12 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn from_flow(flows: Vec<Flow<FlowNode>>) -> Self {
+    pub fn from_flow(flows: Vec<Flow<scheduler::Node>>) -> Self {
         let note_id: AtomicUsize = AtomicUsize::new(0);
         let mut nodes = HashMap::new();
-        let mut edges = HashMap::<(_, _), Flow<FlowNode>>::new();
+        let mut edges = HashMap::<(_, _), Flow<scheduler::Node>>::new();
 
-        let mut insert_node = |node: &Vertex<FlowNode>| {
+        let mut insert_node = |node: &Vertex<scheduler::Node>| {
             if nodes.contains_key(node) {
                 return;
             }
@@ -66,10 +66,15 @@ impl Graph {
                 .map(|(_, flow)| {
                     let a = nodes.get(&flow.a).unwrap();
                     let b = nodes.get(&flow.b).unwrap();
+                    let cost = if flow.cost == i64::MAX {
+                        "inf".to_string()
+                    } else {
+                        format!("{}", flow.cost)
+                    };
                     Edge {
                         from: a.id,
                         to: b.id,
-                        label: format!("fl:{} cst:{}", flow.amount, flow.cost),
+                        label: format!("fl:{} cst:{}", flow.amount, cost),
                         value: flow.amount,
                     }
                 })

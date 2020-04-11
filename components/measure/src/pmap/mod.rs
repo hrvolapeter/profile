@@ -38,7 +38,7 @@ impl Pmap {
                 trace!("Pmap result regex {:?}", cap);
                 memory += cap
                     .get(1)
-                    .map(|x| x.as_str().parse::<u128>().expect("Should be number"))
+                    .map(|x| x.as_str().parse::<u64>().expect("Should be number"))
                     .expect("Have number");
             }
 
@@ -53,5 +53,5 @@ impl Pmap {
 
 #[derive(Debug)]
 pub struct PmapProfile {
-    pub memory: u128,
+    pub memory: u64,
 }

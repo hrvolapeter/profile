@@ -1,6 +1,5 @@
 use super::*;
 use std::collections::VecDeque;
-use std::convert::TryInto;
 
 pub trait BFS {
     /// Returns edge indices if there is a path from source 's' to sink 't' in
@@ -28,7 +27,7 @@ impl<T> BFS for Graph<T> {
 
         while let Some(first) = q.pop_front() {
             for edge in self.edges(first) {
-                if visited[edge.target.0] == false && edge.capacity > Capacity(0) {
+                if !visited[edge.target.0] && edge.flow.0 != edge.capacity.0 {
                     q.push_back(edge.target);
                     visited[edge.target.0] = true;
                     parent[edge.target.0] = ToParent::OverEdge(edge.index);
@@ -36,22 +35,14 @@ impl<T> BFS for Graph<T> {
             }
         }
 
-        let path = {
-            let mut i = self.sink.0;
-            let mut path = vec![];
-            while let ToParent::OverEdge(edge) = &parent[i] {
-                path.push(edge.clone());
-                i = self.edges[edge.0].source.0;
-            }
-            path.reverse();
-            if i == self.source.0 {
-                Some(Path { path })
-            } else {
-                None
-            }
-        };
-
-        path
+        let mut i = self.sink.0;
+        let mut path = vec![];
+        while let ToParent::OverEdge(edge) = &parent[i] {
+            path.push(edge.clone());
+            i = self.edges[edge.0].source.0;
+        }
+        path.reverse();
+        if i == self.source.0 { Some(Path { path }) } else { None }
     }
 
     fn bfs_path(&self) -> Option<Vec<EdgeData>> {

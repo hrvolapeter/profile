@@ -8,5 +8,6 @@ members = [
     "components/network",
     "components/benchmark",
     "components/scheduler",
+    "components/cost_flow",
     "components/scheduler_agent",
 ]

@@ -1,0 +1,105 @@
+{{> header}}
+<h1>Task</h1>
+
+<h3>Task request</h3>
+<p>Measured from previous runs of the task</p>
+<table class="table">
+  <thead>
+    <tr>
+      <td>Name</td>
+      <td>Realtime</td>
+      <td>Image</td>
+      <td>Cpu</td>
+      <td>Disk</td>
+      <td>Network</td>
+      <td>Memory</td>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each tasks}}
+    <tr>
+      <td><b>{{name}}</b></td>
+      <td>{{realtime}}</td>
+      <td>{{image}}</td>
+      <td>{{request.name}}</td>
+      <td>{{request.disk}}</td>
+      <td>{{request.network}}</td>
+      <td>{{request.memory}}</td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
+
+<h3>Add new task</h3>
+<form action="" method="POST" id="serverForm">
+  <div class="form-group">
+    <label for="name">Name</label>
+    <input type="text" class="form-control" id="name" name="name" placeholder="Enter name">
+    <small class="form-text text-muted">Will be used in graph as id</small>
+  </div>
+  <div class="form-group">
+    <label for="image">Image</label>
+    <input type="text" class="form-control" id="image" name="image" placeholder="Enter image url">
+  </div>
+  <label for="realtime">Realtime</label> <input type="checkbox" name="realtime" id="realtime">
+
+  <label for="simulation">Simulation</label> <input type="checkbox" name="simulation" id="simulation">
+  <div id="simulatedProperies" style="display: none;">
+    <div class="form-group">
+      <label for="cpu">cpu</label>
+      <input type="text" class="form-control" name="cpu" placeholder="Cpu">
+    </div>
+    <div class="form-group">
+      <label for="disk">disk</label>
+      <input type="text" class="form-control" name="disk" placeholder="Disk">
+    </div>
+    <div class="form-group">
+      <label for="memory">memory</label>
+      <input type="text" class="form-control" name="memory" placeholder="Memory">
+    </div>
+    <div class="form-group">
+      <label for="network">network</label>
+      <input type="text" class="form-control" name="network" placeholder="Network">
+    </div>
+  </div>
+
+  <input type="submit" id="submit" class="btn btn-primary" value="Submit">
+</form>
+<script>
+  $(document).ready(function () {
+    $('#simulation').change(function () {
+      $('#simulatedProperies').toggle()
+    });
+    function ConvertFormToJSON(form) {
+      var array = jQuery(form).serializeArray();
+      var json = {};
+      jQuery.each(array, function () {
+        json[this.name] = this.value || '';
+      });
+      return json;
+    }
+
+    function ConvertFormToJSON(form) {
+      var array = jQuery(form).serializeArray();
+      var json = {};
+      jQuery.each(array, function () {
+        json[this.name] = this.value || '';
+      });
+      return json;
+    }
+    // click on button submit
+    $("#submit").on('click', function (e) {
+      e.preventDefault();
+      // send ajax
+      let data = ConvertFormToJSON($("#serverForm"));
+      console.log(data);
+      let xhttp = new XMLHttpRequest();
+      xhttp.open("POST", "/schedule/task", false);
+      xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      xhttp.send(JSON.stringify(data));
+      location.reload();
+    });
+  });
+</script>
+
+{{> footer}}

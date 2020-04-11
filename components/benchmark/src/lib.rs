@@ -1,7 +1,7 @@
 #![deny(warnings)]
 
+use measure::ApplicationProfile;
 use std::error::Error;
-use measure::application_profile::ApplicationProfile;
 
 pub async fn run() -> Result<Vec<ApplicationProfile>, Box<dyn Error>> {
     let f = Box::new(move || {
@@ -12,7 +12,7 @@ pub async fn run() -> Result<Vec<ApplicationProfile>, Box<dyn Error>> {
 
 fn workload() -> Result<(), Box<dyn Error>> {
     cpu::run()?;
-    memory::run(2)?;
+    memory::run(1)?;
     let paths = vec![
         "/mnt/nvme/bench.1",
         "/mnt/nvme/bench.2",

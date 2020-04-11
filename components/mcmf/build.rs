@@ -1,9 +1,9 @@
 fn main() {
-    let mut config = cc::Build::new();
-    config.opt_level(3);
-    config.cpp(true);
-    config.file("bindings.cpp");
-    config.include(".");
-    config.compile("libflow.a");
+    let config = cc::Build::new()
+        .opt_level(3)
+        .cpp(true)
+        .file("bindings.cpp")
+        .include(".")
+        .compile("libflow.a");
     println!("cargo:rerun-if-changed=lemon");
 }

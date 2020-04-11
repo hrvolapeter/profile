@@ -1,12 +1,12 @@
 use super::graph::Graph;
 use super::Scheduler;
 use super::SchedulerSubscription;
-use crate::flow;
 use crate::import::*;
 use futures::{FutureExt, StreamExt};
 use handlebars::Handlebars;
 use lazy_static::lazy_static;
 use tokio::sync::mpsc;
+use crate::scheduler;
 use warp::ws::{Message, WebSocket};
 
 lazy_static! {
@@ -70,9 +70,25 @@ pub async fn post_server(
     form: HashMap<String, String>,
 ) -> Result<impl warp::Reply, warp::reject::Rejection> {
     let mut scheduler = scheduler.lock().await;
-    // bench_server(&form["name"]);
-    let server = flow::Server::new(form["name"].clone(), Default::default());
-    scheduler.add_server(server);
+    if form.contains_key("simulation") {
+        let profile = scheduler::ResourceProfile {
+            cpu: form["cpu"].parse::<u64>().unwrap(),
+            memory: form["memory"].parse::<u64>().unwrap(),
+            disk: form["disk"].parse::<u64>().unwrap(),
+            network: form["network"].parse::<u64>().unwrap(),
+        };
+        scheduler.insert_server(scheduler::Server::new(form["name"].clone(), Some(profile))).await;
+    } else {
+        debug!("Copying agent to server");
+        tokio::spawn(async move {
+            scp(None, Path::new("./scheduler_agent"), Some(&form["host"]), Path::new("/tmp"))
+            .await
+            .unwrap();
+            debug!("Starting agent");
+            ssh(&form["host"], "/tmp/scheduler_agent", &form["sudo"]).await.unwrap();
+        });
+        
+    }
     Ok(warp::reply::reply())
 }
 
@@ -81,7 +97,7 @@ async fn scp(
     from: &Path,
     to_host: Option<&str>,
     to: &Path,
-) -> Result<(), Box<dyn Error>> {
+) -> BoxResult<()> {
     use tokio::process::Command;
     let from = if let Some(from_host) = from_host {
         format!("{}:{}", from_host, from.display())
@@ -98,12 +114,12 @@ async fn scp(
     Ok(())
 }
 
-async fn ssh(host: &str, cmd: &str, sudo_pass: &str) -> Result<String, Box<dyn Error>> {
+async fn ssh(host: &str, cmd: &str, sudo_pass: &str) -> BoxResult<String> {
     use tokio::process::Command;
 
     let res = Command::new("ssh")
         .arg(host)
-        .arg(format!("'echo {} | sudo -S {}'", sudo_pass, cmd))
+        .arg(format!("echo {} | sudo -S screen -S backup -d -m {}", sudo_pass, cmd))
         .spawn()?
         .wait_with_output()
         .await?;
@@ -126,13 +142,18 @@ pub async fn post_task(
     form: HashMap<String, String>,
 ) -> Result<impl warp::Reply, warp::reject::Rejection> {
     let mut scheduler = scheduler.lock().await;
-    let request = flow::ResourceProfile {
-        cpu: form["cpu"].parse::<u8>().unwrap(),
-        memory: form["memory"].parse::<u8>().unwrap(),
-        disk: form["disk"].parse::<u8>().unwrap(),
-        network: form["network"].parse::<u8>().unwrap(),
+    let request = if form.contains_key("simulation") {
+        let request = scheduler::ResourceProfile {
+            cpu: form["cpu"].parse::<u64>().unwrap(),
+            memory: form["memory"].parse::<u64>().unwrap(),
+            disk: form["disk"].parse::<u64>().unwrap(),
+            network: form["network"].parse::<u64>().unwrap(),
+        };
+        Some(request)
+    } else {
+       None
     };
-    let task = flow::Task::new(form["name"].clone(), request);
-    scheduler.add_task(task);
+    let task = scheduler::Task::new(form["name"].clone(), request, form["image"].clone(), form.contains_key("realtime"));
+    scheduler.add_task(task).await;
     Ok(warp::reply::reply())
 }

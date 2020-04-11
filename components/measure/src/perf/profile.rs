@@ -1,22 +1,23 @@
 use from_hashmap::FromHashmap;
-use log::trace;
 use std::collections::HashMap;
 use std::error::Error;
+use log::trace;
+
 pub trait FromHashmap<T>: Default {
-    fn from_hashmap(hm: HashMap<String, u128>) -> T;
+    fn from_hashmap(hm: HashMap<String, u64>) -> T;
 }
 #[derive(Debug, Default, FromHashmap)]
 pub struct PerfProfile {
-    pub l1_dcache_loads: u128,
-    pub l1_dcache_load_misses: u128,
-    pub l1_icache_load_misses: u128,
-    pub llc_load_misses: u128,
-    pub llc_loads: u128,
-    pub cycles: u128,
-    pub instructions: u128,
+    pub l1_dcache_loads: u64,
+    pub l1_dcache_load_misses: u64,
+    pub l1_icache_load_misses: u64,
+    pub llc_load_misses: u64,
+    pub llc_loads: u64,
+    pub cycles: u64,
+    pub instructions: u64,
 }
 
-type Record = (String, u128, Option<String>, String);
+type Record = (String, u64, Option<String>, String);
 
 impl PerfProfile {
     pub fn from_stream(s: String) -> Result<Vec<Self>, Box<dyn Error>> {
@@ -28,7 +29,7 @@ impl PerfProfile {
     }
 }
 
-fn build_measurements(mut m: HashMap<String, Vec<u128>>) -> Vec<PerfProfile> {
+fn build_measurements(mut m: HashMap<String, Vec<u64>>) -> Vec<PerfProfile> {
     let keys: Vec<String> = m.keys().cloned().collect();
     let first_vec = m.keys().next().expect("perf should have returned some results");
     let mut res = vec![];
@@ -44,7 +45,7 @@ fn build_measurements(mut m: HashMap<String, Vec<u128>>) -> Vec<PerfProfile> {
     res
 }
 
-fn transpose(records: Vec<Record>) -> HashMap<String, Vec<u128>> {
+fn transpose(records: Vec<Record>) -> HashMap<String, Vec<u64>> {
     let mut res = HashMap::new();
     for r in records {
         let counter = res.entry(r.3).or_insert_with(|| vec![]);

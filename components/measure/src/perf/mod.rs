@@ -3,9 +3,9 @@ use log::debug;
 use log::error;
 use std::error::Error;
 use std::process::Stdio;
+use tokio::process::Child;
 use tokio::process::Command;
 use tokio::sync::mpsc::Receiver;
-use tokio::process::Child;
 
 pub mod profile;
 
@@ -50,7 +50,7 @@ impl Perf {
 
 fn stop_process(process: &Child) -> Result<(), impl Error> {
     use nix::sys::signal::{kill, Signal};
-use nix::unistd::Pid;
+    use nix::unistd::Pid;
 
     let pid = Pid::from_raw(process.id() as i32);
     kill(pid, Signal::SIGTERM)
