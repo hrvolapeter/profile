@@ -11,7 +11,7 @@ pub mod profile;
 
 const PERF_ARGS: &[&str] = &[
     "stat",
-    "-e L1-dcache-loads,L1-dcache-load-misses,L1-icache-load-misses,LLC-loads,LLC-load-misses,cycles,instructions"
+    "-e L1-dcache-loads,L1-dcache-load-misses,L1-icache-load-misses,LLC-loads,LLC-load-misses,cycles,instructions",
 ];
 
 pub struct Perf {

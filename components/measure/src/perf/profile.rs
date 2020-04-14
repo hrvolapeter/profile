@@ -1,7 +1,7 @@
 use from_hashmap::FromHashmap;
+use log::trace;
 use std::collections::HashMap;
 use std::error::Error;
-use log::trace;
 
 pub trait FromHashmap<T>: Default {
     fn from_hashmap(hm: HashMap<String, u64>) -> T;

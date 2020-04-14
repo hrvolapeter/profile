@@ -1,10 +1,10 @@
 use super::*;
 use std::collections::VecDeque;
 
-pub trait BFS {
+pub(crate) trait BFS {
     /// Returns edge indices if there is a path from source 's' to sink 't' in
     /// graph.
-    fn bfs(&self) -> Option<Path>;
+    fn bfs(&self) -> Option<PathInner>;
 
     /// Convenience wrapper around `bfs()` returning edges instead of indeaces
     fn bfs_path(&self) -> Option<Vec<EdgeData>>;
@@ -16,8 +16,8 @@ enum ToParent {
     OverEdge(EdgeIndex),
 }
 
-impl<T> BFS for Graph<T> {
-    fn bfs(&self) -> Option<Path> {
+impl<T: Debug> BFS for Graph<T> {
+    fn bfs(&self) -> Option<PathInner> {
         let mut visited = vec![false; self.nodes.len()];
         let mut parent = vec![ToParent::None; self.nodes.len()];
 
@@ -42,11 +42,11 @@ impl<T> BFS for Graph<T> {
             i = self.edges[edge.0].source.0;
         }
         path.reverse();
-        if i == self.source.0 { Some(Path { path }) } else { None }
+        if i == self.source.0 { Some(PathInner(path)) } else { None }
     }
 
     fn bfs_path(&self) -> Option<Vec<EdgeData>> {
-        self.bfs().map(|x| x.path.iter().map(|x| self.edges[x.0].clone()).collect())
+        self.bfs().map(|x| x.0.iter().map(|x| self.edges[x.0].clone()).collect())
     }
 }
 

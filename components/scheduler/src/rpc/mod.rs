@@ -1,9 +1,9 @@
-use crate::scheduler;
 use crate::import::*;
+use crate::scheduler;
+use futures::channel::mpsc;
+use futures::{FutureExt, StreamExt};
 use log::debug;
 use tonic::{Request, Response, Status};
-use futures::{FutureExt, StreamExt};
-use futures::channel::mpsc;
 
 pub use proto::scheduler_server::{Scheduler, SchedulerServer};
 use proto::{RegistrationReply, RegistrationRequest};
@@ -25,7 +25,7 @@ impl SchedulerService {
 
 #[tonic::async_trait]
 impl Scheduler for SchedulerService {
-    type SubscribeTasksStream = mpsc::Receiver<Result<proto::SubscribeTasksReply,  tonic::Status>>;
+    type SubscribeTasksStream = mpsc::Receiver<Result<proto::SubscribeTasksReply, tonic::Status>>;
 
     async fn register_server(
         &self,
@@ -33,7 +33,11 @@ impl Scheduler for SchedulerService {
     ) -> Result<Response<RegistrationReply>, Status> {
         let request = request.into_inner();
         debug!("Registering server id: '{}'", request.machine_id);
-        self.scheduler.lock().await.insert_server(scheduler::Server::new(request.machine_id, None)).await;
+        self.scheduler
+            .lock()
+            .await
+            .insert_server(scheduler::Server::new(Uuid::parse_str(&request.machine_id).unwrap(), request.hostname.clone(), None))
+            .await;
 
         let reply = proto::RegistrationReply { should_benchmark: true };
 
@@ -46,18 +50,9 @@ impl Scheduler for SchedulerService {
     ) -> Result<Response<proto::BenchmarkSubmitReply>, Status> {
         let request = request.into_inner();
         debug!("Received benchmark from server id: '{}'", request.machine_id);
-        let profile = request.profile.unwrap();
-        let profile = scheduler::ResourceProfile {
-            cpu: profile.instructions / profile.cycles,
-            disk: profile.vfs_read + profile.vfs_write,
-            memory: profile.memory,
-            network: profile.tcp_send_bytes + profile.tcp_recv_bytes,
-        };
-
-        let server = scheduler::Server::new(request.machine_id, Some(profile));
+        let mut sch = self.scheduler.lock().await;
+        let server = sch.get_server(&Uuid::from_str(&request.machine_id).unwrap());
         debug!("Registering server with profile: '{:?}'", server);
-        self.scheduler.lock().await.insert_server(server).await;
-
         let reply = proto::BenchmarkSubmitReply {};
 
         Ok(Response::new(reply))
@@ -68,39 +63,46 @@ impl Scheduler for SchedulerService {
         request: Request<proto::SubscribeTasksRequest>,
     ) -> Result<Response<Self::SubscribeTasksStream>, tonic::Status> {
         let (sched_tx, sched_rx) = mpsc::channel(10);
-        
+
         let request = request.into_inner();
-        self.scheduler.lock().await.subscribe_server(request.machine_id, sched_tx);
+        self.scheduler.lock().await.subscribe_server(Uuid::parse_str(&request.machine_id).unwrap(), sched_tx);
 
         let (tx, rx) = mpsc::channel(10);
 
-        tokio::task::spawn(sched_rx
-            .map(|x| {
-                let task = Some(x.task.into());
-                let state: proto::subscribe_tasks_reply::State = x.state.into();
-                let res = proto::SubscribeTasksReply {task, state: state as i32};
-                Ok(Ok(res))
-            })
-            .forward(tx)
-            .map(|result| {
-                if let Err(e) = result {
-                    error!("task send error: {}", e);
-                }
-            })
+        tokio::task::spawn(
+            sched_rx
+                .map(|x| {
+                    let task = Some(x.task.into());
+                    let state: proto::subscribe_tasks_reply::State = x.state.into();
+                    let res = proto::SubscribeTasksReply { task, state: state as i32 };
+                    Ok(Ok(res))
+                })
+                .forward(tx)
+                .map(|result| {
+                    if let Err(e) = result {
+                        error!("task send error: {}", e);
+                    }
+                }),
         );
-
 
         Ok(Response::new(rx))
     }
 }
 
-
-impl From<scheduler::Task> for proto::subscribe_tasks_reply::Task {
-    fn from(task: scheduler::Task) -> Self {
-        Self {
-            image: task.get_image().clone(),
-            is_profiled: task.get_request().is_none(),
+impl Into<scheduler::ResourceProfile > for proto::benchmark_submit_request::Profile {
+    fn into(self) -> scheduler::ResourceProfile {
+        scheduler::ResourceProfile {
+            ipc: Decimal::new(self.instructions as i64, 0) / Decimal::new(self.cycles as i64, 0),
+            disk: self.vfs_read + self.vfs_write,
+            memory: self.memory,
+            network: self.tcp_send_bytes + self.tcp_recv_bytes,
         }
+    }
+}
+
+impl From<scheduler::NormalizedTask> for proto::subscribe_tasks_reply::Task {
+    fn from(task: scheduler::NormalizedTask) -> Self {
+        Self { image: task.image().clone(), is_profiled: task.request().is_none() }
     }
 }
 

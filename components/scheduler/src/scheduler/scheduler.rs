@@ -1,24 +1,28 @@
-use mcmf::{Capacity, Cost, Flow, GraphBuilder, Vertex, Path};
-use tokio::sync::watch;
-use futures::channel::mpsc;
-use crate::import::*;
+use super::Node;
+use super::Server;
 use super::Task;
 use super::TaskCommand;
-use super::Server;
-use super::Node;
 use super::VirtualResource;
-use std::convert::TryInto;
+use super::NormalizedTask;
+use super::NormalizedServer;
+use super::ResourceProfile;
+use crate::import::*;
+use cost_flow;
+use cost_flow::{Capacity, Cost};
+use futures::channel::mpsc;
 use futures_util::sink::SinkExt;
-use std::cmp::max;
+use std::convert::TryInto;
+use tokio::sync::watch;
+use super::NormalizedResourceProfile;
 
-type Flows = Vec<Flow<Node>>;
+type Flows = Vec<cost_flow::Edge<Node>>;
 type ServerTaskSubscription = mpsc::Sender<TaskCommand>;
-type ServerID = String;
+type ServerID = Uuid;
 pub struct Scheduler {
-    tasks: Vec<Task>,
-    servers: HashMap<ServerID, Server>,
+    tasks: Vec<Task<ResourceProfile>>,
+    servers: HashMap<ServerID, Server<ResourceProfile>>,
     server_subscriptions: HashMap<ServerID, ServerTaskSubscription>,
-    schedule: HashMap<Task, ServerID>,
+    schedule: HashMap<NormalizedTask, ServerID>,
     notif_channel: (watch::Sender<Flows>, watch::Receiver<Flows>),
 }
 
@@ -33,65 +37,87 @@ impl Scheduler {
         }
     }
 
-    pub async fn add_task(&mut self, task: Task) {
+    pub async fn add_task(&mut self, task: Task<ResourceProfile>) {
         self.tasks.push(task);
         self.schedule().await;
     }
 
-    pub fn get_tasks(&self) -> &Vec<Task> {
+    pub fn get_tasks(&self) -> &Vec<Task<ResourceProfile>> {
         &self.tasks
     }
 
     /// Add or replace server based on `id`
-    pub async fn insert_server(&mut self, server: Server) {
-        self.servers.insert(server.id.clone(), server);
+    pub async fn insert_server(&mut self, server: Server<ResourceProfile>) {
+        self.servers.insert(*server.id(), server);
         self.schedule().await;
     }
 
-    pub fn get_servers(&self) -> Vec<&Server> {
+    pub fn get_servers(&self) -> Vec<&Server<ResourceProfile>> {
         self.servers.values().collect()
     }
 
-    pub fn subscribe_server(&mut self, id: String, tx: ServerTaskSubscription) {
+    pub fn get_server(&mut self, id: &Uuid) -> Option<&mut Server<ResourceProfile>> {
+        self.servers.get_mut(id)
+    }
+
+    pub fn subscribe_server(&mut self, id: Uuid, tx: ServerTaskSubscription) {
         self.server_subscriptions.insert(id, tx);
     }
 
     async fn schedule(&mut self) {
-        let graph = self.build_flow_graph();
-        let (_, paths, flows) = graph.mcmf();
+        use cost_flow::MinimumCostFlow;
+        let (servers, tasks) = self.normalized();
+        let mut graph = build_flow_graph(servers, tasks);
+        graph.minimum_cost_flow();
+        let paths = graph.paths();
         let _ = self.place_tasks(paths).await;
-        let _ = self.notif_channel.0.broadcast(flows);
+        let _ = self.notif_channel.0.broadcast(graph.all_edges());
     }
 
-    async fn place_tasks(&mut self, paths: Vec<Path<Node>>) -> BoxResult<()> {
+    fn normalized(&self) -> (Vec<NormalizedServer>, Vec<NormalizedTask>) {
+        // TODO: 1. check if tasks have higher profile than it's server and update if so
+        use std::cmp::max;
+        // 2. global maximum profile
+        let max_profile = self.servers.values().map(|x| x.current().unwrap_or_else(|| Default::default())).fold(ResourceProfile::default(), |acc, x|
+            ResourceProfile {
+                ipc:  max(acc.ipc, x.ipc),
+                disk: max(acc.disk, x.disk),
+                network: max(acc.network, x.network),
+                memory: max(acc.memory, x.memory),
+            }
+        );
+        let servers = self.servers.values().map(|x| x.normalize(&max_profile)).collect();
+
+        let tasks = self.tasks.iter().map(|x| x.normalize(&max_profile)).collect();
+
+        (servers, tasks)
+    }
+
+    async fn place_tasks(&mut self, paths: Vec<cost_flow::Path<Node>>) -> BoxResult<()> {
         use super::task::State;
         for path in paths {
             let (server, task) = get_server_task(path)?;
-            let old = self.schedule.insert(task.clone(), server.id.clone());
+            debug!("Scheduling task '{}' on server '{}'", task.name(), server.hostname());
+            let old = self.schedule.insert(task.clone(), *server.id());
             if let Some(old) = old {
                 let subscription = self.server_subscriptions.get_mut(&old).unwrap();
-                let cmd = TaskCommand {
-                    task: task.clone(),
-                    state: State::Remove,
-                };
+                let cmd = TaskCommand { task: task.clone(), state: State::Remove };
                 subscription.send(cmd).await?;
             }
-            let subscription = self.server_subscriptions.get_mut(&server.id).unwrap();
-            let cmd = TaskCommand {
-                task: task.clone(),
-                state: State::Run,
-            };
+            // TODO : task cannot have higher resource profile than tha server it's runing on
+            let subscription = self.server_subscriptions.get_mut(&server.id()).unwrap();
+            let cmd = TaskCommand { task: task.clone(), state: State::Run };
             subscription.send(cmd).await?;
         }
 
-        fn get_server_task(path: Path<Node>) -> BoxResult<(Server, Task)> {
+        fn get_server_task(path: cost_flow::Path<Node>) -> BoxResult<(NormalizedServer, NormalizedTask)> {
             let mut server = None;
             let mut tasks = None;
-            for vertex in path.vertices() {
-                match vertex {
-                    Vertex::Node(Node::Server(s)) => server = Some(s.clone()),
-                    Vertex::Node(Node::Task(s)) => tasks = Some(s.clone()),
-                    _ => {},
+            for edge in path.edges {
+                match edge.source {
+                    cost_flow::Node::Node(Node::Server(s)) => server = Some(s.clone()),
+                    cost_flow::Node::Node(Node::Task(s)) => tasks = Some(s.clone()),
+                    _ => {}
                 }
             }
             Ok((server.ok_or("no server")?, tasks.ok_or("no task")?))
@@ -100,59 +126,53 @@ impl Scheduler {
         Ok(())
     }
 
-    fn build_flow_graph(&self) -> GraphBuilder<Node> {
-        let mut graph = GraphBuilder::new();
-        let cluster = Node::VirtualResource(VirtualResource::new("Cluster".to_string()));
-        let task_count = self.tasks.len();
-
-        let mut strongest_machine = &Default::default();
-        for server in self.servers.values() {
-            let cost = if let Some(current) = server.get_current() {
-                strongest_machine = max(strongest_machine, current);
-                current.inner_product()
-            } else {
-                i64::MAX as u64
-            };
-
-            graph.add_edge(
-                cluster.clone(),
-                Node::Server(server.clone()),
-                Capacity(task_count as i64),
-                Cost(cost.try_into().unwrap()),
-            );
-            graph.add_edge(
-                Node::Server(server.clone()),
-                Vertex::Sink,
-                Capacity(task_count as i64),
-                Cost(0),
-            );
-        }
-
-        for task in &self.tasks {
-            let cost = if let Some(request) = task.get_request() {
-                request.inner_product()
-            } else {
-                0
-            };
-
-            graph.add_edge(Vertex::Source, Node::Task(task.clone()), Capacity(1), Cost(0));
-            graph.add_edge(
-                Node::Task(task.clone()),
-                cluster.clone(),
-                Capacity(1),
-                Cost(cost.try_into().unwrap()),
-            );
-
-            let unscheduled = Node::VirtualResource(VirtualResource::new("Unscheduled".to_string()));
-            graph.add_edge(Node::Task(task.clone()), unscheduled.clone(), Capacity(1), Cost(0));
-            // TODO: add time to running to cost
-            graph.add_edge(unscheduled, Vertex::Sink, Capacity(1), Cost((strongest_machine.inner_product() * 2) as i64));
-        }
-
-        graph
-    }
-
     pub fn subscribe(&self) -> watch::Receiver<Flows> {
         self.notif_channel.1.clone()
     }
+}
+
+
+fn build_flow_graph(servers: Vec<NormalizedServer>, tasks: Vec<NormalizedTask>) -> cost_flow::Graph<Node> {
+    let mut graph = cost_flow::Graph::new();
+    let cluster =
+        graph.add_node(Node::VirtualResource(VirtualResource::new("Cluster".to_string())));
+    let task_count = tasks.len();
+
+    for server in servers {
+        let cost = if let Some(current) = server.current() {
+            current.inner_product()
+        } else {
+            i64::MAX as u64
+        };
+        let server = graph.add_node(Node::Server(server.clone()));
+        graph.add_edge(
+            cluster,
+            server,
+            Capacity(task_count.try_into().unwrap()),
+            Cost(cost.try_into().unwrap()),
+        );
+        graph.add_edge(server, graph.sink, Capacity(task_count.try_into().unwrap()), Cost(0));
+    }
+
+    for task in tasks {
+        let cost =
+            if let Some(request) = task.request() { request.inner_product() } else { 0 };
+
+        let task = graph.add_node(Node::Task(task.clone()));
+        graph.add_edge(graph.source, task, Capacity(1), Cost(0));
+        graph.add_edge(task, cluster, Capacity(1), Cost(cost.try_into().unwrap()));
+
+        let unscheduled = graph
+            .add_node(Node::VirtualResource(VirtualResource::new("Unscheduled".to_string())));
+        graph.add_edge(task, unscheduled, Capacity(1), Cost(0));
+        // TODO: add time to running to cost
+        graph.add_edge(
+            unscheduled,
+            graph.sink,
+            Capacity(1),
+            Cost((NormalizedResourceProfile::MAX.inner_product() * 2).try_into().unwrap()),
+        );
+    }
+
+    graph
 }

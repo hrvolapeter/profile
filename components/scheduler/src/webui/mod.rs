@@ -1,13 +1,12 @@
 pub mod graph;
 mod handlers;
 
-use crate::scheduler;
 use crate::import::*;
-use mcmf::Flow;
+use crate::scheduler;
 use tokio::sync::watch::Receiver;
 use warp::Filter;
 
-type SchedulerSubscription = Receiver<Vec<Flow<scheduler::Node>>>;
+type SchedulerSubscription = Receiver<Vec<cost_flow::Edge<scheduler::Node>>>;
 type Scheduler = Arc<Mutex<scheduler::Scheduler>>;
 
 pub async fn serve(scheduler: Scheduler) {

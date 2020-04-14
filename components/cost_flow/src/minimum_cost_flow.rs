@@ -1,7 +1,7 @@
 use super::*;
 
-pub trait CycleCancelling {
-    fn cycle_cancelling(&mut self);
+pub trait MinimumCostFlow {
+    fn minimum_cost_flow(&mut self);
     fn bellman_ford(&self) -> Option<Vec<EdgeData>>;
 }
 
@@ -11,20 +11,18 @@ enum ToParent {
     OverEdge(EdgeIndex),
 }
 
-impl<T: Clone> CycleCancelling for Graph<T> {
-    fn cycle_cancelling(&mut self) {
+impl<T: Clone + Debug> MinimumCostFlow for Graph<T> {
+    fn minimum_cost_flow(&mut self) {
         self.ford_fulkerson();
         loop {
             let (residual, res_index_to_g_index) = self.residual_graph();
             if let Some(cycle) = residual.bellman_ford() {
-                let min_edge = cycle.iter().min_by_key(|x| x.capacity).unwrap();
+                let min_edge = cycle.iter().min_by_key(|x| x.capacity.0).unwrap();
                 for edge in &cycle {
-                    if edge == min_edge {
-                        self.edges[res_index_to_g_index[edge.index.0].0].flow -=
-                            Flow(min_edge.capacity.0);
-                    } else {
-                        self.edges[res_index_to_g_index[edge.index.0].0].flow +=
-                            Flow(min_edge.capacity.0);
+                    let transpose = res_index_to_g_index[edge.index.0];
+                    match transpose {
+                        Ok(i) => self.edges[i.0].flow += Flow(min_edge.capacity.0),
+                        Err(i) => self.edges[i.0].flow -= Flow(min_edge.capacity.0),
                     }
                 }
             } else {
@@ -113,7 +111,7 @@ mod test {
         graph.add_edge(a, graph.sink, Capacity(1), Cost(4));
         graph.add_edge(b, graph.sink, Capacity(6), Cost(1));
 
-        graph.cycle_cancelling();
+        graph.minimum_cost_flow();
         assert_eq!(graph.edges[4].flow.0, 6);
         assert_eq!(graph.edges[4].capacity.0, 6);
         assert_eq!(graph.edges[3].flow.0, 0);
@@ -124,5 +122,40 @@ mod test {
         assert_eq!(graph.edges[1].capacity.0, 4);
         assert_eq!(graph.edges[0].flow.0, 2);
         assert_eq!(graph.edges[0].capacity.0, 2);
+    }
+
+    #[test]
+    fn scheduling_simple() {
+        let mut graph = Graph::new();
+
+        let task1 = graph.add_node(1);
+        let task2 = graph.add_node(2);
+        let cluster = graph.add_node(3);
+        let unscheduled1 = graph.add_node(4);
+        let unscheduled2 = graph.add_node(5);
+        let server = graph.add_node(6);
+
+        graph.add_edge(graph.source, task1, Capacity(1), Cost(0));
+        graph.add_edge(graph.source, task2, Capacity(1), Cost(0));
+        graph.add_edge(task1, cluster, Capacity(1), Cost(0));
+        graph.add_edge(task2, cluster, Capacity(1), Cost(0));
+        graph.add_edge(task1, unscheduled1, Capacity(1), Cost(0));
+        graph.add_edge(task2, unscheduled2, Capacity(1), Cost(0));
+        graph.add_edge(unscheduled1, graph.sink, Capacity(1), Cost(67_492_958_072));
+        graph.add_edge(unscheduled2, graph.sink, Capacity(1), Cost(67_492_958_072));
+        graph.add_edge(cluster, server, Capacity(2), Cost(33_746_479_036));
+        graph.add_edge(server, graph.sink, Capacity(2), Cost(1));
+
+        graph.minimum_cost_flow();
+        assert_eq!(graph.edges[4].flow.0, 0);
+        assert_eq!(graph.edges[4].capacity.0, 1);
+        assert_eq!(graph.edges[3].flow.0, 1);
+        assert_eq!(graph.edges[3].capacity.0, 1);
+        assert_eq!(graph.edges[2].flow.0, 1);
+        assert_eq!(graph.edges[2].capacity.0, 1);
+        assert_eq!(graph.edges[1].flow.0, 1);
+        assert_eq!(graph.edges[1].capacity.0, 1);
+        assert_eq!(graph.edges[0].flow.0, 1);
+        assert_eq!(graph.edges[0].capacity.0, 1);
     }
 }

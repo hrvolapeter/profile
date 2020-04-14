@@ -1,8 +1,6 @@
-use crate::scheduler::Displayable;
-use crate::scheduler;
 use crate::import::*;
-use mcmf::Flow;
-use mcmf::Vertex;
+use crate::scheduler;
+use crate::scheduler::Displayable;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -27,19 +25,19 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn from_flow(flows: Vec<Flow<scheduler::Node>>) -> Self {
+    pub fn from_flow(flows: Vec<cost_flow::Edge<scheduler::Node>>) -> Self {
         let note_id: AtomicUsize = AtomicUsize::new(0);
         let mut nodes = HashMap::new();
-        let mut edges = HashMap::<(_, _), Flow<scheduler::Node>>::new();
+        let mut edges = HashMap::<(_, _), cost_flow::Edge<scheduler::Node>>::new();
 
-        let mut insert_node = |node: &Vertex<scheduler::Node>| {
+        let mut insert_node = |node: &cost_flow::Node<scheduler::Node>| {
             if nodes.contains_key(node) {
                 return;
             }
             let label = match node {
-                Vertex::Node(t) => t.name(),
-                Vertex::Source => "Source".to_string(),
-                Vertex::Sink => "Sink".to_string(),
+                cost_flow::Node::Node(t) => t.name(),
+                cost_flow::Node::Source => "Source".to_string(),
+                cost_flow::Node::Sink => "Sink".to_string(),
             };
             nodes.insert(
                 node.clone(),
@@ -48,25 +46,19 @@ impl Graph {
         };
 
         for flow in flows {
-            insert_node(&flow.a);
-            insert_node(&flow.b);
-            let key = (flow.a.clone(), flow.b.clone());
-            if edges.contains_key(&key) {
-                let mut edge = edges.get_mut(&key).unwrap();
-                edge.amount += flow.amount;
-                edge.cost += flow.cost;
-            } else {
-                edges.insert(key.clone(), flow);
-            }
+            insert_node(&flow.source);
+            insert_node(&flow.target);
+            let key = (flow.source.clone(), flow.target.clone());
+            edges.insert(key, flow);
         }
 
         Graph {
             edges: edges
                 .into_iter()
                 .map(|(_, flow)| {
-                    let a = nodes.get(&flow.a).unwrap();
-                    let b = nodes.get(&flow.b).unwrap();
-                    let cost = if flow.cost == i64::MAX {
+                    let a = nodes.get(&flow.source).unwrap();
+                    let b = nodes.get(&flow.target).unwrap();
+                    let cost = if flow.cost as i64 == i64::MAX {
                         "inf".to_string()
                     } else {
                         format!("{}", flow.cost)
@@ -74,8 +66,8 @@ impl Graph {
                     Edge {
                         from: a.id,
                         to: b.id,
-                        label: format!("fl:{} cst:{}", flow.amount, cost),
-                        value: flow.amount,
+                        label: format!("fl:{} cst:{}", flow.flow, cost),
+                        value: flow.flow,
                     }
                 })
                 .collect(),

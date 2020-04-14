@@ -416,6 +416,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_more"
+version = "0.99.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2323f3f47db9a0e77ce7a300605d8d2098597fc451ed1a97bb1f6411bb550a7"
+dependencies = [
+ "proc-macro2",
+ "quote 1.0.3",
+ "syn 1.0.17",
+]
+
+[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -645,6 +656,18 @@ dependencies = [
  "cfg-if",
  "libc",
  "wasi",
+]
+
+[[package]]
+name = "getset"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f62a139c59ae846c3964c392f12aac68f1997d1a40e9d3b40a89a4ab553e04a0"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote 1.0.3",
+ "syn 1.0.17",
 ]
 
 [[package]]
@@ -913,7 +936,7 @@ dependencies = [
  "error-chain",
  "lazy_static 0.2.11",
  "log 0.3.9",
- "uuid",
+ "uuid 0.5.1",
 ]
 
 [[package]]
@@ -933,13 +956,6 @@ name = "maybe-uninit"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
-
-[[package]]
-name = "mcmf"
-version = "2.0.0"
-dependencies = [
- "cc",
-]
 
 [[package]]
 name = "measure"
@@ -1146,7 +1162,6 @@ dependencies = [
 name = "network"
 version = "0.1.0"
 dependencies = [
- "futures",
  "reqwest",
 ]
 
@@ -1808,6 +1823,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust_decimal"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1989cf75ea3463a3584ad69f92642e8046083482f519017aa2258333e5dc61cd"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "num-traits",
+ "serde",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1840,20 +1867,24 @@ name = "scheduler"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "cost_flow",
+ "derive_more",
  "fern",
  "futures",
  "futures-util",
+ "getset",
  "handlebars",
  "lazy_static 1.4.0",
  "log 0.4.8",
- "mcmf",
  "openssl",
  "prost",
+ "rust_decimal",
  "serde",
  "serde_json",
  "tokio",
  "tonic",
  "tonic-build",
+ "uuid 0.8.1",
  "warp",
 ]
 
@@ -2570,6 +2601,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bcc7e3b898aa6f6c08e5295b6c89258d1331e9ac578cc992fb818759951bdc22"
 dependencies = [
  "rand 0.3.23",
+]
+
+[[package]]
+name = "uuid"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fde2f6a4bea1d6e007c4ad38c6839fa71cbb63b6dbf5b595aa38dc9b1093c11"
+dependencies = [
+ "rand 0.7.3",
+ "serde",
 ]
 
 [[package]]

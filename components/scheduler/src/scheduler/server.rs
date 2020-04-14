@@ -1,26 +1,39 @@
-use super::ResourceProfile;
 use super::Displayable;
 use crate::import::*;
+use getset::{Getters, Setters};
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug, Serialize)]
-pub struct Server {
-    pub id: String,
-    // max utilization
-    pub current: Option<ResourceProfile>,
+#[derive(PartialOrd, PartialEq, Clone, Debug, Serialize, Eq, Ord, Hash, Getters, Setters)]
+pub struct Server<T> {
+    #[get = "pub"]
+    id: Uuid,
+    #[getset(get = "pub", set = "pub")]
+    hostname: String,
+    #[getset(get = "pub", set = "pub")]
+    current: Option<T>,
+    profiles: Vec<T>,
 }
 
-impl Server {
-    pub fn new(id: String, current: Option<ResourceProfile>) -> Self {
-        Self { id, current }
+impl<T> Server<T> {
+    pub fn new(id: Uuid, hostname: String, current: Option<T>) -> Self {
+        Self { hostname, current, id, profiles: vec![] }
     }
 
-    pub fn get_current(&self) -> &Option<ResourceProfile> {
-        &self.current
+    
+}
+
+impl Server<super::ResourceProfile> {
+    pub fn normalize(&self, max_profile: &super::ResourceProfile) -> super::NormalizedServer {
+        super::NormalizedServer {
+            current: self.current.map(|x| x.normalize(max_profile)),
+            hostname: self.hostname.clone(),
+            id: self.id,
+            profiles: self.profiles.iter().map(|x| x.normalize(max_profile)).collect(),
+        }
     }
 }
 
-impl Displayable for Server {
+impl<T> Displayable for Server<T> {
     fn name(&self) -> String {
-        self.id.clone()
+        self.hostname.clone()
     }
 }

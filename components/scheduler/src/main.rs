@@ -3,9 +3,9 @@
 #![feature(async_closure)]
 #![feature(try_trait)]
 
+mod rpc;
 mod scheduler;
 mod webui;
-mod rpc;
 
 use futures_util::future::FutureExt;
 use std::error::Error;
@@ -47,8 +47,6 @@ fn setup_logger() -> Result<(), fern::InitError> {
             ))
         })
         .chain(std::io::stderr())
-        .level(log::LevelFilter::Warn)
-        .level_for("scheduler", log::LevelFilter::Trace)
         .apply()?;
     Ok(())
 }
@@ -56,8 +54,8 @@ fn setup_logger() -> Result<(), fern::InitError> {
 mod import {
     #[allow(warnings)]
     pub(crate) use {
-        log::debug, std::collections::HashMap, std::path::Path, std::sync::Arc,
-        tokio::sync::Mutex, serde::Serialize, serde::Deserialize, log::error,
+        log::debug, log::error, log::trace, serde::Deserialize, serde::Serialize,
+        std::collections::HashMap, std::path::Path, std::sync::Arc, tokio::sync::Mutex, uuid::Uuid, rust_decimal::Decimal, std::str::FromStr,
     };
     pub type BoxResult<T> = Result<T, Box<dyn std::error::Error>>;
 }

@@ -8,9 +8,9 @@ mod scheduler {
 use machine_id::MachineId;
 use scheduler::scheduler_client::SchedulerClient;
 use std::cmp::max;
-use tonic::transport::Channel;
-use tonic::codec::Streaming;
 use std::error::Error;
+use tonic::codec::Streaming;
+use tonic::transport::Channel;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -37,7 +37,9 @@ async fn register(client: &mut SchedulerClient<Channel>) -> Result<(), Box<dyn E
     Ok(())
 }
 
-async fn subscribe_tasks(client: &mut SchedulerClient<Channel>) -> Result<Streaming<scheduler::SubscribeTasksReply>, Box<dyn std::error::Error>> {
+async fn subscribe_tasks(
+    client: &mut SchedulerClient<Channel>,
+) -> Result<Streaming<scheduler::SubscribeTasksReply>, Box<dyn std::error::Error>> {
     let request = tonic::Request::new(scheduler::SubscribeTasksRequest {
         machine_id: MachineId::get().to_string(),
     });
@@ -70,7 +72,7 @@ async fn submit_benchmark(
     client: &mut SchedulerClient<Channel>,
     profile: measure::ApplicationProfile,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let profile = Some(scheduler::Profile {
+    let profile = Some(scheduler::benchmark_submit_request::Profile {
         cache_misses: profile.cache_misses as u64,
         cache_references: profile.cache_references as u64,
         vfs_write: profile.vfs_write as u64,

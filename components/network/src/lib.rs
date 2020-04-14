@@ -1,5 +1,3 @@
-use futures::executor::block_on;
-
 use std::thread;
 
 const URL_PATH: &str = "http://speedtest.wdc01.softlayer.com/downloads/test1000.zip";
@@ -10,8 +8,7 @@ pub fn run() {
         let mut children = vec![];
         for _ in 0..NTHREADS {
             children.push(thread::spawn(move || {
-                let req = reqwest::get(URL_PATH);
-                block_on(req).unwrap();
+                let _ = reqwest::blocking::get(URL_PATH);
             }));
         }
         for child in children {

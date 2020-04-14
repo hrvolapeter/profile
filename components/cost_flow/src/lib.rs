@@ -4,15 +4,16 @@
 #![allow(clippy::wildcard_imports)]
 
 mod bfs;
-mod cycle_cancelling;
 mod ford_fulkerson;
+mod minimum_cost_flow;
 
-pub use bfs::BFS;
-pub use cycle_cancelling::CycleCancelling;
+use bfs::BFS;
 pub use ford_fulkerson::FordFulkerson;
+pub use minimum_cost_flow::MinimumCostFlow;
+use std::fmt::Debug;
 
-#[derive(Clone)]
-pub struct Graph<T> {
+#[derive(Clone, Debug)]
+pub struct Graph<T: Debug> {
     nodes: Vec<NodeData<T>>,
     edges: Vec<EdgeData>,
     pub source: NodeIndex,
@@ -23,14 +24,14 @@ pub struct Graph<T> {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct NodeIndex(usize);
 
-#[derive(Clone)]
-struct NodeData<T> {
+#[derive(Clone, Debug)]
+pub struct NodeData<T: Debug> {
     first_outgoing_edge: Option<EdgeIndex>,
     pub inner: Node<T>,
 }
 
-#[derive(Clone)]
-pub enum Node<T> {
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub enum Node<T: Debug> {
     Sink,
     Source,
     Node(T),
@@ -42,7 +43,7 @@ pub enum Node<T> {
 pub struct EdgeIndex(usize);
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug)]
-pub struct Cost(i64);
+pub struct Cost(pub i64);
 
 impl Cost {
     const MAX: Cost = Self(i64::MAX);
@@ -57,7 +58,7 @@ impl std::ops::Add for Cost {
 }
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug)]
-pub struct Capacity(i64);
+pub struct Capacity(pub i64);
 
 impl Capacity {
     const MAX: Capacity = Self(i64::MAX);
@@ -76,7 +77,7 @@ impl std::ops::AddAssign for Capacity {
 }
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug)]
-pub struct Flow(i64);
+struct Flow(pub i64);
 
 impl std::ops::SubAssign for Flow {
     fn sub_assign(&mut self, rhs: Self) {
@@ -107,11 +108,26 @@ impl EdgeData {
     }
 }
 
-pub struct Path {
-    pub path: Vec<EdgeIndex>,
+#[derive(Debug)]
+struct PathInner(Vec<EdgeIndex>);
+
+/// Represents flow in a solution to the minimum cost maximum flow problem.
+#[derive(Clone, Debug)]
+pub struct Edge<T: Clone + Debug> {
+    pub source: Node<T>,
+    pub target: Node<T>,
+    pub flow: u64,
+    pub capacity: u64,
+    pub cost: u64,
 }
 
-impl<T> Graph<T> {
+/// Represents a path from the source to the sink in a solution to the minimum cost maximum flow problem.
+#[derive(Debug)]
+pub struct Path<T: Clone + Debug> {
+    pub edges: Vec<Edge<T>>,
+}
+
+impl<T: Debug> Graph<T> {
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -164,7 +180,7 @@ impl<T> Graph<T> {
         node_data.first_outgoing_edge = Some(edge_index);
     }
 
-    fn residual_graph(&self) -> (Graph<()>, Vec<EdgeIndex>) {
+    fn residual_graph(&self) -> (Graph<()>, Vec<Result<EdgeIndex, EdgeIndex>>) {
         let mut res = Graph::new();
         for _ in &self.nodes {
             let _ = res.add_node(());
@@ -172,34 +188,90 @@ impl<T> Graph<T> {
         let mut mapping = vec![];
         for edge in &self.edges {
             if edge.capacity.0 != edge.flow.0 {
-                mapping.push(edge.index);
+                mapping.push(Ok(edge.index));
                 res.add_edge(edge.source, edge.target, edge.residual_capacity(), edge.cost);
             }
-            mapping.push(edge.index);
+            mapping.push(Err(edge.index));
             res.add_edge(edge.target, edge.source, Capacity(edge.flow.0), Cost(-edge.cost.0));
         }
         (res, mapping)
     }
 
-    #[must_use]
-    pub fn successors(&self, source: NodeIndex) -> Successors<T> {
+    #[allow(dead_code)]
+    fn successors(&self, source: NodeIndex) -> Successors<T> {
         let first_outgoing_edge = self.nodes[source.0].first_outgoing_edge;
         Successors { graph: self, current_edge_index: first_outgoing_edge }
     }
 
-    #[must_use]
-    pub fn edges(&self, source: NodeIndex) -> Edges<T> {
+    fn edges(&self, source: NodeIndex) -> Edges<T> {
         let first_outgoing_edge = self.nodes[source.0].first_outgoing_edge;
         Edges { graph: self, current_edge_index: first_outgoing_edge }
     }
+
+    fn paths_inner(&self, node: NodeIndex) -> Vec<PathInner> {
+        let edges = self.edges(node).filter(|x| x.flow.0 > 0 && x.capacity.0 > 0);
+        let mut res = vec![];
+        for edge in edges {
+            let mut paths = self.paths_inner(edge.target);
+            for path in &mut paths {
+                path.0.push(edge.index);
+            }
+            if paths.is_empty() {
+                paths.push(PathInner(vec![edge.index]));
+            }
+
+            res.append(&mut paths);
+        }
+        res
+    }
 }
 
-pub struct Successors<'graph, T> {
+impl<T: Clone + Debug> Graph<T> {
+    #[must_use]
+    pub fn paths(&self) -> Vec<Path<T>> {
+        self.paths_inner(self.source)
+            .into_iter()
+            .map(|mut x| {
+                x.0.reverse();
+                let edges =
+                    x.0.into_iter()
+                        .map(|x| {
+                            let edge = &self.edges[x.0];
+                            Edge {
+                                source: self.nodes[edge.source.0].inner.clone(),
+                                target: self.nodes[edge.target.0].inner.clone(),
+                                capacity: edge.capacity.0 as u64,
+                                flow: edge.flow.0 as u64,
+                                cost: edge.cost.0 as u64,
+                            }
+                        })
+                        .collect();
+                Path { edges }
+            })
+            .collect()
+    }
+
+    #[must_use]
+    pub fn all_edges(&self) -> Vec<Edge<T>> {
+        self.edges
+            .iter()
+            .map(|edge| Edge {
+                source: self.nodes[edge.source.0].inner.clone(),
+                target: self.nodes[edge.target.0].inner.clone(),
+                capacity: edge.capacity.0 as u64,
+                flow: edge.flow.0 as u64,
+                cost: edge.cost.0 as u64,
+            })
+            .collect()
+    }
+}
+
+struct Successors<'graph, T: Debug> {
     graph: &'graph Graph<T>,
     current_edge_index: Option<EdgeIndex>,
 }
 
-impl<'graph, T> Iterator for Successors<'graph, T> {
+impl<'graph, T: Debug> Iterator for Successors<'graph, T> {
     type Item = NodeIndex;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -214,12 +286,12 @@ impl<'graph, T> Iterator for Successors<'graph, T> {
     }
 }
 
-pub struct Edges<'graph, T> {
+struct Edges<'graph, T: Debug> {
     graph: &'graph Graph<T>,
     current_edge_index: Option<EdgeIndex>,
 }
 
-impl<'graph, T> Iterator for Edges<'graph, T> {
+impl<'graph, T: Debug> Iterator for Edges<'graph, T> {
     type Item = &'graph EdgeData;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -240,7 +312,7 @@ mod test {
 
     #[test]
     fn empty_graph() {
-        Graph::<i8>::new();
+        let _ = Graph::<i8>::new();
     }
 
     #[test]
@@ -327,5 +399,25 @@ mod test {
         assert_eq!(g.edges[5].cost.0, 1);
         assert_eq!(g.edges[6].capacity.0, 5);
         assert_eq!(g.edges[6].cost.0, -1);
+    }
+
+    #[test]
+    fn paths() {
+        let mut g = Graph::new();
+        let a = g.add_node(1);
+        let b = g.add_node(2);
+        let c = g.add_node(3);
+
+        g.add_edge_with_flow(g.source, a, Capacity(2), Cost(1), Flow(2));
+        g.add_edge_with_flow(g.source, b, Capacity(4), Cost(1), Flow(4));
+        g.add_edge_with_flow(a, g.sink, Capacity(1), Cost(4), Flow(1));
+        g.add_edge_with_flow(b, g.sink, Capacity(6), Cost(1), Flow(5));
+        g.add_edge_with_flow(g.source, c, Capacity(4), Cost(1), Flow(0));
+
+        let paths = g.paths();
+        assert_eq!(paths[0].edges[0].flow, 4);
+        assert_eq!(paths[0].edges[1].flow, 5);
+        assert_eq!(paths[1].edges[0].flow, 2);
+        assert_eq!(paths[1].edges[1].flow, 1);
     }
 }

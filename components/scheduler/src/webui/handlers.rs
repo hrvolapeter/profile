@@ -2,11 +2,11 @@ use super::graph::Graph;
 use super::Scheduler;
 use super::SchedulerSubscription;
 use crate::import::*;
+use crate::scheduler;
 use futures::{FutureExt, StreamExt};
 use handlebars::Handlebars;
 use lazy_static::lazy_static;
 use tokio::sync::mpsc;
-use crate::scheduler;
 use warp::ws::{Message, WebSocket};
 
 lazy_static! {
@@ -72,22 +72,21 @@ pub async fn post_server(
     let mut scheduler = scheduler.lock().await;
     if form.contains_key("simulation") {
         let profile = scheduler::ResourceProfile {
-            cpu: form["cpu"].parse::<u64>().unwrap(),
+            ipc: form["ipc"].parse::<Decimal>().unwrap(),
             memory: form["memory"].parse::<u64>().unwrap(),
             disk: form["disk"].parse::<u64>().unwrap(),
             network: form["network"].parse::<u64>().unwrap(),
         };
-        scheduler.insert_server(scheduler::Server::new(form["name"].clone(), Some(profile))).await;
+        scheduler.insert_server(scheduler::Server::new(Uuid::new_v4(), form["name"].clone(), Some(profile))).await;
     } else {
         debug!("Copying agent to server");
         tokio::spawn(async move {
             scp(None, Path::new("./scheduler_agent"), Some(&form["host"]), Path::new("/tmp"))
-            .await
-            .unwrap();
+                .await
+                .unwrap();
             debug!("Starting agent");
             ssh(&form["host"], "/tmp/scheduler_agent", &form["sudo"]).await.unwrap();
         });
-        
     }
     Ok(warp::reply::reply())
 }
@@ -144,16 +143,21 @@ pub async fn post_task(
     let mut scheduler = scheduler.lock().await;
     let request = if form.contains_key("simulation") {
         let request = scheduler::ResourceProfile {
-            cpu: form["cpu"].parse::<u64>().unwrap(),
+            ipc: form["ipc"].parse::<Decimal>().unwrap(),
             memory: form["memory"].parse::<u64>().unwrap(),
             disk: form["disk"].parse::<u64>().unwrap(),
             network: form["network"].parse::<u64>().unwrap(),
         };
         Some(request)
     } else {
-       None
+        None
     };
-    let task = scheduler::Task::new(form["name"].clone(), request, form["image"].clone(), form.contains_key("realtime"));
+    let task = scheduler::Task::new(
+        form["name"].clone(),
+        request,
+        form["image"].clone(),
+        form.contains_key("realtime"),
+    );
     scheduler.add_task(task).await;
     Ok(warp::reply::reply())
 }

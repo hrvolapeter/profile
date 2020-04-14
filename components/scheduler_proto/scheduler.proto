@@ -29,6 +29,22 @@ message SubscribeTasksReply {
 }
 
 message BenchmarkSubmitRequest {
+    message Profile {
+        uint64 cacheMisses = 1;
+        uint64 cacheReferences = 2;
+        uint64 vfsWrite = 3;
+        uint64 vfsRead = 4;
+        uint64 tcpSendBytes = 5;
+        uint64 tcpRecvBytes = 6;
+        uint64 l1DcacheLoads = 7;
+        uint64 l1DcacheLoadMisses = 8;
+        uint64 l1IcacheLoadMisses = 9;
+        uint64 llcLoadMisses = 10;
+        uint64 llcLoads = 11;
+        uint64 cycles = 12;
+        uint64 instructions = 13;
+        uint64 memory = 14;
+    }
     string machineId = 1;
     Profile profile = 2;
 }
@@ -39,25 +55,9 @@ message BenchmarkSubmitReply {
 
 message RegistrationRequest {
     string machineId = 1;
+    string hostname = 2;
 }
 
 message RegistrationReply {
     bool shouldBenchmark = 1;
-}
-
-message Profile {
-    uint64 cacheMisses = 1;
-    uint64 cacheReferences = 2;
-    uint64 vfsWrite = 3;
-    uint64 vfsRead = 4;
-    uint64 tcpSendBytes = 5;
-    uint64 tcpRecvBytes = 6;
-    uint64 l1DcacheLoads = 7;
-    uint64 l1DcacheLoadMisses = 8;
-    uint64 l1IcacheLoadMisses = 9;
-    uint64 llcLoadMisses = 10;
-    uint64 llcLoads = 11;
-    uint64 cycles = 12;
-    uint64 instructions = 13;
-    uint64 memory = 14;
 }

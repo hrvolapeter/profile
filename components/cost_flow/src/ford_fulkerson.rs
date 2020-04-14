@@ -7,15 +7,15 @@ pub trait FordFulkerson {
     fn ford_fulkerson(&mut self);
 }
 
-impl<T: Clone> FordFulkerson for Graph<T> {
+impl<T: Clone + Debug> FordFulkerson for Graph<T> {
     fn ford_fulkerson(&mut self) {
         while let Some(path) = self.bfs() {
             let mut residual_path_capacity = Capacity::MAX;
-            for edge in &path.path {
+            for edge in &path.0 {
                 residual_path_capacity =
                     min(residual_path_capacity, self.edges[edge.0].residual_capacity());
             }
-            for edge in path.path {
+            for edge in path.0 {
                 let edge = &mut self.edges[edge.0];
                 edge.flow += Flow(residual_path_capacity.0);
             }

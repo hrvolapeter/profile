@@ -18,10 +18,14 @@ futures = "0.3"
 fern = {version = "0.6" , features = ["colored"]}
 log = "0.4"
 chrono = "0.4"
-mcmf = {path = "../mcmf"}
 prost = "0.6"
 tonic = "0.2"
 openssl = { version = '0.10', features = ["vendored"] }
+cost_flow = { path = "../cost_flow" }
+uuid = { version = "0.8", features = ["v4", "serde"] }
+derive_more = "0.99"
+rust_decimal = "1.4"
+getset = "0.1"
 
 [build-dependencies]
 tonic-build = "0.2"
