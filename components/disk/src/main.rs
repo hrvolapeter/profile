@@ -1,8 +1,7 @@
 use clap::{App, Arg};
 use disk::run;
-use std::error::Error;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> disk::BoxResult<()> {
     let matches = App::new("disk")
         .arg(
             Arg::with_name("path")

@@ -46,6 +46,8 @@ fn setup_logger() -> Result<(), fern::InitError> {
                 message
             ))
         })
+        .level(log::LevelFilter::Info)
+        .level_for("scheduler", log::LevelFilter::Trace)
         .chain(std::io::stderr())
         .apply()?;
     Ok(())
@@ -54,8 +56,9 @@ fn setup_logger() -> Result<(), fern::InitError> {
 mod import {
     #[allow(warnings)]
     pub(crate) use {
-        log::debug, log::error, log::trace, serde::Deserialize, serde::Serialize,
-        std::collections::HashMap, std::path::Path, std::sync::Arc, tokio::sync::Mutex, uuid::Uuid, rust_decimal::Decimal, std::str::FromStr,
+        log::debug, log::error, log::trace, rust_decimal::Decimal, serde::Deserialize,
+        serde::Serialize, std::collections::HashMap, std::path::Path, std::str::FromStr,
+        std::sync::Arc, tokio::sync::Mutex, uuid::Uuid, std::convert::TryInto,
     };
     pub type BoxResult<T> = Result<T, Box<dyn std::error::Error>>;
 }

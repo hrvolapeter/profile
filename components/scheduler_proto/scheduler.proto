@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "google/protobuf/wrappers.proto";
 
 package scheduler;
 
@@ -9,6 +10,10 @@ service Scheduler {
     rpc SubmitBenchmark(BenchmarkSubmitRequest) returns (BenchmarkSubmitReply) {};
     // Listen for scheduling events
     rpc SubscribeTasks(SubscribeTasksRequest) returns (stream SubscribeTasksReply) {};
+    // Task finished
+    rpc FinishTask(FinishTaskRequest) returns (FinishTaskReply) {};
+    // Submit task profile
+    rpc StreamTaskProfiles(stream StreamTaskProfilesRequest) returns (StreamTaskProfilesReply) {};
 }
 
 message SubscribeTasksRequest {
@@ -17,8 +22,10 @@ message SubscribeTasksRequest {
 
 message SubscribeTasksReply {
     message Task {
-        string image = 1;
-        bool isProfiled = 2;
+        string id = 1;
+        string image = 2;
+        google.protobuf.StringValue cmd = 3;
+        bool isProfiled = 4;
     }
     enum State {
         run = 0;
@@ -28,30 +35,29 @@ message SubscribeTasksReply {
     State state = 2;
 }
 
+message Profile {
+    uint64 cacheMisses = 1;
+    uint64 cacheReferences = 2;
+    uint64 vfsWrite = 3;
+    uint64 vfsRead = 4;
+    uint64 tcpSendBytes = 5;
+    uint64 tcpRecvBytes = 6;
+    uint64 l1DcacheLoads = 7;
+    uint64 l1DcacheLoadMisses = 8;
+    uint64 l1IcacheLoadMisses = 9;
+    uint64 llcLoadMisses = 10;
+    uint64 llcLoads = 11;
+    uint64 cycles = 12;
+    uint64 instructions = 13;
+    uint64 memory = 14;
+}
+
 message BenchmarkSubmitRequest {
-    message Profile {
-        uint64 cacheMisses = 1;
-        uint64 cacheReferences = 2;
-        uint64 vfsWrite = 3;
-        uint64 vfsRead = 4;
-        uint64 tcpSendBytes = 5;
-        uint64 tcpRecvBytes = 6;
-        uint64 l1DcacheLoads = 7;
-        uint64 l1DcacheLoadMisses = 8;
-        uint64 l1IcacheLoadMisses = 9;
-        uint64 llcLoadMisses = 10;
-        uint64 llcLoads = 11;
-        uint64 cycles = 12;
-        uint64 instructions = 13;
-        uint64 memory = 14;
-    }
     string machineId = 1;
     Profile profile = 2;
 }
 
-message BenchmarkSubmitReply {
-
-}
+message BenchmarkSubmitReply {}
 
 message RegistrationRequest {
     string machineId = 1;
@@ -61,3 +67,18 @@ message RegistrationRequest {
 message RegistrationReply {
     bool shouldBenchmark = 1;
 }
+
+message StreamTaskProfilesRequest {
+    string machineId = 1;
+    string taskId = 2;
+    Profile profile = 3;
+}
+
+message StreamTaskProfilesReply {}
+
+message FinishTaskRequest {
+    string machineId = 1;
+    string taskId = 2;
+}
+
+message FinishTaskReply {}

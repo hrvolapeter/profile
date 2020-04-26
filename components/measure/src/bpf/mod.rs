@@ -3,12 +3,12 @@ use self::profile::BpfProfile;
 use log::debug;
 use log::trace;
 use log::warn;
-use std::error::Error;
 use std::io::Write;
 use std::process::Stdio;
 use tempfile::NamedTempFile;
 use tokio::sync::mpsc::Receiver;
 
+use crate::BoxResult;
 use tokio::process::Command;
 
 pub mod profile;
@@ -21,7 +21,7 @@ pub struct Bpf {
 }
 
 impl Bpf {
-    pub fn new(pids: &[u64], receiver: Receiver<bool>) -> Result<Bpf, Box<dyn Error>> {
+    pub fn new(pids: &[u64], receiver: Receiver<bool>) -> BoxResult<Bpf> {
         let pids: Vec<_> = pids.iter().map(|x| format!("pid == {}", x)).collect();
         let pids = pids.join(" || ");
         let bpf_src = String::from(BPF_SRC).replace("${PID}", &pids[..]);
@@ -31,7 +31,7 @@ impl Bpf {
         Ok(Bpf { conf: file, receiver })
     }
 
-    pub async fn lop(mut self) -> Result<Vec<BpfProfile>, Box<dyn Error>> {
+    pub async fn lop(mut self) -> BoxResult<Vec<BpfProfile>> {
         let mut res = vec![];
         while self.receiver.try_recv().is_err() {
             let cmd = Command::new("/usr/bin/bpftrace")

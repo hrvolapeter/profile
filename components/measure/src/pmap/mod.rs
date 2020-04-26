@@ -1,7 +1,7 @@
+use crate::BoxResult;
 use log::debug;
 use log::trace;
 use regex::Regex;
-use std::error::Error;
 use std::process::Stdio;
 use std::{thread, time};
 use tokio::process::Command;
@@ -13,12 +13,12 @@ pub struct Pmap {
 }
 
 impl Pmap {
-    pub fn new(pids: &[u64], receiver: Receiver<bool>) -> Result<Pmap, Box<dyn Error>> {
+    pub fn new(pids: &[u64], receiver: Receiver<bool>) -> BoxResult<Pmap> {
         let pids: Vec<_> = pids.iter().map(|x| x.to_string()).collect();
         Ok(Self { pids, receiver })
     }
 
-    pub async fn lop(mut self) -> Result<Vec<PmapProfile>, Box<dyn Error>> {
+    pub async fn lop(mut self) -> BoxResult<Vec<PmapProfile>> {
         let mut res = vec![];
         let regex = Regex::new(r"total kB\s+(\d+)").unwrap();
         while self.receiver.try_recv().is_err() {

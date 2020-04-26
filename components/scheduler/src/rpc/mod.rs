@@ -36,7 +36,11 @@ impl Scheduler for SchedulerService {
         self.scheduler
             .lock()
             .await
-            .insert_server(scheduler::Server::new(Uuid::parse_str(&request.machine_id).unwrap(), request.hostname.clone(), None))
+            .insert_server(scheduler::Server::new(
+                Uuid::parse_str(&request.machine_id).unwrap(),
+                request.hostname.clone(),
+                None,
+            ))
             .await;
 
         let reply = proto::RegistrationReply { should_benchmark: true };
@@ -51,8 +55,10 @@ impl Scheduler for SchedulerService {
         let request = request.into_inner();
         debug!("Received benchmark from server id: '{}'", request.machine_id);
         let mut sch = self.scheduler.lock().await;
-        let server = sch.get_server(&Uuid::from_str(&request.machine_id).unwrap());
+        let server = sch.get_server(&Uuid::from_str(&request.machine_id).unwrap()).unwrap();
         debug!("Registering server with profile: '{:?}'", server);
+        server.set_profile(Some(request.profile.unwrap().into()));
+        sch.schedule().await;
         let reply = proto::BenchmarkSubmitReply {};
 
         Ok(Response::new(reply))
@@ -65,7 +71,10 @@ impl Scheduler for SchedulerService {
         let (sched_tx, sched_rx) = mpsc::channel(10);
 
         let request = request.into_inner();
-        self.scheduler.lock().await.subscribe_server(Uuid::parse_str(&request.machine_id).unwrap(), sched_tx);
+        self.scheduler
+            .lock()
+            .await
+            .subscribe_server(Uuid::parse_str(&request.machine_id).unwrap(), sched_tx);
 
         let (tx, rx) = mpsc::channel(10);
 
@@ -87,12 +96,39 @@ impl Scheduler for SchedulerService {
 
         Ok(Response::new(rx))
     }
+
+    async fn stream_task_profiles(
+        &self,
+        request: Request<tonic::Streaming<proto::StreamTaskProfilesRequest>>,
+    ) -> Result<Response<proto::StreamTaskProfilesReply>, Status> {
+        let mut stream = request.into_inner();
+        while let Some(request) = stream.next().await {
+            let request = request?;
+            let mut sched = self.scheduler.lock().await;
+            let task = sched.get_task(&Uuid::from_str(&request.task_id).unwrap()).unwrap();
+            trace!("Received profile for '{}', '{:?}'", &request.task_id, &request.profile);
+            task.insert_profile(
+                Uuid::from_str(&request.machine_id).unwrap(),
+                request.profile.unwrap().into(),
+            );
+            sched.schedule().await;
+        }
+        Ok(Response::new(proto::StreamTaskProfilesReply {}))
+    }
+
+    async fn finish_task(
+        &self,
+        request: Request<proto::FinishTaskRequest>
+    ) -> Result<Response<proto::FinishTaskReply>, Status> {
+        let mut sched = self.scheduler.lock().await;
+        
+    }
 }
 
-impl Into<scheduler::ResourceProfile > for proto::benchmark_submit_request::Profile {
+impl Into<scheduler::ResourceProfile> for proto::Profile {
     fn into(self) -> scheduler::ResourceProfile {
         scheduler::ResourceProfile {
-            ipc: Decimal::new(self.instructions as i64, 0) / Decimal::new(self.cycles as i64, 0),
+            ipc: Decimal::new(self.instructions as i64, 0).checked_div(Decimal::new(self.cycles as i64, 0)).unwrap_or(Decimal::new(0,0)),
             disk: self.vfs_read + self.vfs_write,
             memory: self.memory,
             network: self.tcp_send_bytes + self.tcp_recv_bytes,
@@ -102,7 +138,12 @@ impl Into<scheduler::ResourceProfile > for proto::benchmark_submit_request::Prof
 
 impl From<scheduler::NormalizedTask> for proto::subscribe_tasks_reply::Task {
     fn from(task: scheduler::NormalizedTask) -> Self {
-        Self { image: task.image().clone(), is_profiled: task.request().is_none() }
+        Self {
+            id: task.id().to_string(),
+            image: task.image().clone(),
+            is_profiled: task.request().is_none(),
+            cmd: task.cmd().clone(),
+        }
     }
 }
 

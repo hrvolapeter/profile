@@ -1,24 +1,29 @@
-use super::Displayable;
-use crate::import::*;
 use super::NormalizedTask;
+use crate::import::*;
+use cost_flow::Graphable;
 use getset::{Getters, Setters};
 use std::hash::Hash;
 use std::hash::Hasher;
 
-#[derive(Clone, Debug, Serialize, Eq, PartialEq, Hash, Getters, Setters)]
+#[derive(Clone, Debug, Serialize, Eq, PartialEq, Getters, Setters)]
 pub struct Task<T> {
     #[getset(get = "pub")]
     id: Uuid,
     #[getset(get = "pub", set = "pub")]
     request: Option<T>,
-    #[getset(get = "pub", set = "pub")]
-    profiles: HashMap<Uuid, T>,
+    #[getset(get = "pub")]
+    profiles: HashMap<Uuid, Vec<T>>,
     #[getset(get = "pub")]
     name: String,
     #[getset(get = "pub")]
     image: String,
     #[getset(get = "pub")]
+    cmd: Option<String>,
+    #[getset(get = "pub")]
     realtime: bool,
+    /// Signals finished task
+    #[getset(get = "pub", set = "pub")]
+    schedulable: bool,
 }
 
 impl<T> Task<T> {
@@ -27,14 +32,24 @@ impl<T> Task<T> {
         request: Option<T>,
         image: String,
         realtime: bool,
+        cmd: Option<String>,
     ) -> Self {
-        Self { name, request, image, realtime, id: Uuid::new_v4(), profiles: Default::default() }
+        Self {
+            name,
+            cmd,
+            request,
+            image,
+            realtime,
+            id: Uuid::new_v4(),
+            profiles: Default::default(),
+            schedulable: true,
+        }
     }
 }
 
 impl<T> Hash for Task<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash();
+        self.id.hash(state);
     }
 }
 
@@ -46,13 +61,43 @@ impl Task<super::ResourceProfile> {
             realtime: self.realtime,
             name: self.name.clone(),
             request: self.request.map(|x| x.normalize(&max_profile)),
-            profiles: self.profiles.iter().map(|x| (x.0, x.1.normalize(max_profile))).collect(),
+            cmd: self.cmd.clone(),
+            profiles: self
+                .profiles
+                .iter()
+                .map(|x| (x.0.clone(), x.1.iter().map(|x| x.normalize(max_profile)).collect()))
+                .collect(),
+            schedulable: self.schedulable,
         }
+    }
+
+    pub fn insert_profile(&mut self, server_id: Uuid, profile: super::ResourceProfile) {
+        let entry = self.profiles.entry(server_id).or_insert(vec![]);
+        (*entry).push(profile);
     }
 }
 
-impl<T> Displayable for Task<T> {
-    fn name(&self) -> String {
+impl Task<super::ResourceProfile> {
+    pub fn debug_profile(&self) -> super::ResourceProfile {
+        self.profiles
+            .values()
+            .flatten()
+            .fold(Default::default(), |acc, x| acc + x.clone())
+    }
+}
+
+impl Task<super::NormalizedResourceProfile> {
+    pub fn avg_profile(&self, server_id: &Uuid) -> super::NormalizedResourceProfile {
+        self.profiles
+            .get(server_id)
+            .unwrap_or(&vec![])
+            .iter()
+            .fold(Default::default(), |acc, x| acc + x.clone())
+    }
+}
+
+impl<T> Graphable for Task<T> {
+    fn name_label(&self) -> String {
         self.name.clone()
     }
 }

@@ -1,6 +1,6 @@
+use crate::BoxResult;
 use log::trace;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResCount {
@@ -67,7 +67,7 @@ impl BpfProfileBuilder {
 }
 
 impl BpfProfile {
-    pub fn from_stream(s: &String) -> Result<Self, Box<dyn Error>> {
+    pub fn from_stream(s: &String) -> BoxResult<Self> {
         trace!("Bpf stdout message: {:?}", &s);
         let res: Vec<_> = s
             .lines()

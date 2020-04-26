@@ -4,48 +4,86 @@ mod task;
 mod scheduler {
     tonic::include_proto!("scheduler");
 }
+mod prelude {
+    use crate::scheduler::scheduler_client::SchedulerClient;
+    use std::error::Error;
+    use tonic::transport::Channel;
 
-use machine_id::MachineId;
-use scheduler::scheduler_client::SchedulerClient;
+    pub(crate) use {
+        log::trace, machine_id::MachineId, std::convert::TryInto, std::sync::Arc,
+        tokio::sync::mpsc, tokio::sync::Mutex, log::debug,
+    };
+    pub type Client = Arc<Mutex<SchedulerClient<Channel>>>;
+    pub type BoxResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
+}
+
+use crate::prelude::*;
+use crate::scheduler::scheduler_client::SchedulerClient;
 use std::cmp::max;
-use std::error::Error;
 use tonic::codec::Streaming;
-use tonic::transport::Channel;
+use fern::colors::ColoredLevelConfig;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = SchedulerClient::connect("http://[::1]:50051").await?;
+async fn main() -> BoxResult<()> {
+    setup_logger()?;
+    let client = Arc::new(Mutex::new(SchedulerClient::connect("http://[::1]:50051").await?));
+    let tasks = subscribe_tasks(client.clone()).await?;
+    let registration = register(client.clone());
 
-    let tasks = subscribe_tasks(&mut client).await?;
-    let tasks = task::process_tasks(tasks);
-    let registration = register(&mut client);
+    let mut task_runner = task::TaskRunner::new();
+    let tasks = task_runner.process_tasks(client, tasks);
     futures::try_join!(registration, tasks)?;
     Ok(())
 }
 
-async fn register(client: &mut SchedulerClient<Channel>) -> Result<(), Box<dyn Error>> {
+fn setup_logger() -> Result<(), fern::InitError> {
+    let colors = ColoredLevelConfig::new()
+        .debug(fern::colors::Color::Green)
+        .trace(fern::colors::Color::Blue);
+
+    fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                colors.color(record.level()),
+                message
+            ))
+        })
+        .chain(std::io::stderr())
+        .apply()?;
+    Ok(())
+}
+
+
+async fn register(client: Client) -> BoxResult<()> {
+    let mut client = client.lock().await;
     let request = tonic::Request::new(scheduler::RegistrationRequest {
         machine_id: MachineId::get().to_string(),
+        hostname: hostname::get()?.into_string().unwrap(),
     });
 
     let response = client.register_server(request).await?.into_inner();
     if response.should_benchmark {
         let profiles = benchmark::run().await?;
         let profile = get_maximum(profiles);
-        submit_benchmark(client, profile).await?;
+        let request = tonic::Request::new(scheduler::BenchmarkSubmitRequest {
+            machine_id: MachineId::get().to_string(),
+            profile: Some(profile.into()),
+        });
+        client.submit_benchmark(request).await?;
     }
     Ok(())
 }
 
-async fn subscribe_tasks(
-    client: &mut SchedulerClient<Channel>,
-) -> Result<Streaming<scheduler::SubscribeTasksReply>, Box<dyn std::error::Error>> {
+async fn subscribe_tasks(client: Client) -> BoxResult<Streaming<scheduler::SubscribeTasksReply>> {
+    let mut client = client.lock().await;
     let request = tonic::Request::new(scheduler::SubscribeTasksRequest {
         machine_id: MachineId::get().to_string(),
     });
 
     let response = client.subscribe_tasks(request).await?.into_inner();
-
     Ok(response)
 }
 
@@ -68,32 +106,23 @@ fn get_maximum(profiles: Vec<measure::ApplicationProfile>) -> measure::Applicati
     })
 }
 
-async fn submit_benchmark(
-    client: &mut SchedulerClient<Channel>,
-    profile: measure::ApplicationProfile,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let profile = Some(scheduler::benchmark_submit_request::Profile {
-        cache_misses: profile.cache_misses as u64,
-        cache_references: profile.cache_references as u64,
-        vfs_write: profile.vfs_write as u64,
-        vfs_read: profile.vfs_read as u64,
-        tcp_send_bytes: profile.tcp_send_bytes as u64,
-        tcp_recv_bytes: profile.tcp_recv_bytes as u64,
-        l1_dcache_loads: profile.l1_dcache_loads as u64,
-        l1_dcache_load_misses: profile.l1_dcache_load_misses as u64,
-        l1_icache_load_misses: profile.l1_icache_load_misses as u64,
-        llc_load_misses: profile.llc_load_misses as u64,
-        llc_loads: profile.llc_loads as u64,
-        cycles: profile.cycles as u64,
-        instructions: profile.instructions as u64,
-        memory: profile.memory as u64,
-    });
-    let request = tonic::Request::new(scheduler::BenchmarkSubmitRequest {
-        machine_id: MachineId::get().to_string(),
-        profile,
-    });
-
-    client.submit_benchmark(request).await?;
-
-    Ok(())
+impl From<measure::ApplicationProfile> for scheduler::Profile {
+    fn from(profile: measure::ApplicationProfile) -> Self {
+        Self {
+            cache_misses: profile.cache_misses as u64,
+            cache_references: profile.cache_references as u64,
+            vfs_write: profile.vfs_write as u64,
+            vfs_read: profile.vfs_read as u64,
+            tcp_send_bytes: profile.tcp_send_bytes as u64,
+            tcp_recv_bytes: profile.tcp_recv_bytes as u64,
+            l1_dcache_loads: profile.l1_dcache_loads as u64,
+            l1_dcache_load_misses: profile.l1_dcache_load_misses as u64,
+            l1_icache_load_misses: profile.l1_icache_load_misses as u64,
+            llc_load_misses: profile.llc_load_misses as u64,
+            llc_loads: profile.llc_loads as u64,
+            cycles: profile.cycles as u64,
+            instructions: profile.instructions as u64,
+            memory: profile.memory as u64,
+        }
+    }
 }

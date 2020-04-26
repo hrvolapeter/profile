@@ -1,8 +1,9 @@
 use rayon::iter::ParallelBridge;
 use rayon::prelude::*;
 use std::error::Error;
+pub type BoxResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
-pub fn run() -> Result<(), Box<dyn Error>> {
+pub fn run() -> BoxResult<()> {
     let s = include_str!("./numbers.txt");
     let res: Vec<_> = s
         .lines()

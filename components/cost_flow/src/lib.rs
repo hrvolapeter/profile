@@ -12,6 +12,10 @@ pub use ford_fulkerson::FordFulkerson;
 pub use minimum_cost_flow::MinimumCostFlow;
 use std::fmt::Debug;
 
+pub trait Graphable {
+    fn name_label(&self) -> String;
+}
+
 #[derive(Clone, Debug)]
 pub struct Graph<T: Debug> {
     nodes: Vec<NodeData<T>>,
@@ -21,13 +25,14 @@ pub struct Graph<T: Debug> {
 }
 
 // NODE
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
 pub struct NodeIndex(usize);
 
 #[derive(Clone, Debug)]
 pub struct NodeData<T: Debug> {
     first_outgoing_edge: Option<EdgeIndex>,
     pub inner: Node<T>,
+    index: NodeIndex,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -39,10 +44,10 @@ pub enum Node<T: Debug> {
 
 // EDGE
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
 pub struct EdgeIndex(usize);
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct Cost(pub i64);
 
 impl Cost {
@@ -53,11 +58,11 @@ impl std::ops::Add for Cost {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        Self(self.0 + rhs.0)
+        self.0.checked_add(rhs.0).map_or(Cost::MAX, Self)
     }
 }
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct Capacity(pub i64);
 
 impl Capacity {
@@ -76,7 +81,7 @@ impl std::ops::AddAssign for Capacity {
     }
 }
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 struct Flow(pub i64);
 
 impl std::ops::SubAssign for Flow {
@@ -91,7 +96,7 @@ impl std::ops::AddAssign for Flow {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Hash, Eq)]
 pub struct EdgeData {
     index: EdgeIndex,
     cost: Cost,
@@ -132,8 +137,8 @@ impl<T: Debug> Graph<T> {
     pub fn new() -> Self {
         Self {
             nodes: vec![
-                NodeData { first_outgoing_edge: None, inner: Node::Source },
-                NodeData { first_outgoing_edge: None, inner: Node::Sink },
+                NodeData { first_outgoing_edge: None, inner: Node::Source, index: NodeIndex(0) },
+                NodeData { first_outgoing_edge: None, inner: Node::Sink, index: NodeIndex(1) },
             ],
             edges: vec![],
             source: NodeIndex(0),
@@ -143,9 +148,9 @@ impl<T: Debug> Graph<T> {
 
     #[must_use]
     pub fn add_node(&mut self, inner: T) -> NodeIndex {
-        let index = self.nodes.len();
-        self.nodes.push(NodeData { first_outgoing_edge: None, inner: Node::Node(inner) });
-        NodeIndex(index)
+        let index = NodeIndex(self.nodes.len());
+        self.nodes.push(NodeData { index, first_outgoing_edge: None, inner: Node::Node(inner) });
+        index
     }
 
     pub fn add_edge(
@@ -266,6 +271,39 @@ impl<T: Clone + Debug> Graph<T> {
     }
 }
 
+impl<T: Clone + Debug + Graphable> Graph<T> {
+    #[must_use]
+    pub fn graphviz(&self) -> String {
+        let inner: String = self
+            .edges
+            .iter()
+            .map(|e| {
+                let cost =
+                    if e.cost == Cost::MAX { "inf".to_string() } else { format!("{}", e.cost.0) };
+                let source = match &self.nodes[e.source.0].inner {
+                    Node::Node(n) => n.name_label(),
+                    _ => format!("{}", e.source.0),
+                };
+                let target = match &self.nodes[e.target.0].inner {
+                    Node::Node(n) => n.name_label(),
+                    _ => format!("{}", e.target.0),
+                };
+                format!(
+                    r#""{}" -> "{}" [label="{}/{};{}"];
+"#,
+                    source, target, e.flow.0, e.capacity.0, cost
+                )
+            })
+            .collect();
+        format!(
+            r#"digraph g {{
+{}
+}}"#,
+            inner
+        )
+    }
+}
+
 struct Successors<'graph, T: Debug> {
     graph: &'graph Graph<T>,
     current_edge_index: Option<EdgeIndex>,
@@ -309,6 +347,7 @@ impl<'graph, T: Debug> Iterator for Edges<'graph, T> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn empty_graph() {
@@ -385,20 +424,20 @@ mod test {
         g.add_edge_with_flow(b, g.sink, Capacity(6), Cost(1), Flow(5));
 
         let g = g.residual_graph().0;
+        assert_eq!(
+            r#"digraph g {
+"2" -> "0" [label="0/2;-1"];
+"3" -> "0" [label="0/4;-1"];
+"2" -> "3" [label="0/2;1"];
+"3" -> "2" [label="0/1;-1"];
+"1" -> "2" [label="0/1;-4"];
+"3" -> "1" [label="0/1;1"];
+"1" -> "3" [label="0/5;-1"];
+
+}"#,
+            g.graphviz()
+        );
         assert_eq!(g.edges[0].capacity.0, 2);
-        assert_eq!(g.edges[0].cost.0, -1);
-        assert_eq!(g.edges[1].capacity.0, 4);
-        assert_eq!(g.edges[1].cost.0, -1);
-        assert_eq!(g.edges[2].capacity.0, 2);
-        assert_eq!(g.edges[2].cost.0, 1);
-        assert_eq!(g.edges[3].capacity.0, 1);
-        assert_eq!(g.edges[3].cost.0, -1);
-        assert_eq!(g.edges[4].capacity.0, 1);
-        assert_eq!(g.edges[4].cost.0, -4);
-        assert_eq!(g.edges[5].capacity.0, 1);
-        assert_eq!(g.edges[5].cost.0, 1);
-        assert_eq!(g.edges[6].capacity.0, 5);
-        assert_eq!(g.edges[6].cost.0, -1);
     }
 
     #[test]

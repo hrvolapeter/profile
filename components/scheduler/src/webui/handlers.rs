@@ -1,4 +1,3 @@
-use super::graph::Graph;
 use super::Scheduler;
 use super::SchedulerSubscription;
 use crate::import::*;
@@ -37,10 +36,7 @@ pub async fn graphflow(ws: WebSocket, mut graph_rx: SchedulerSubscription) {
     let mut flows = graph_rx.recv().await.unwrap();
 
     loop {
-        let graph = Graph::from_flow(flows);
-        if let Err(_disconnected) =
-            tx.send(Ok(Message::text(serde_json::to_string(&graph).unwrap())))
-        {
+        if let Err(_disconnected) = tx.send(Ok(Message::text(flows))) {
             break;
         }
         flows = graph_rx.recv().await.unwrap();
@@ -77,7 +73,13 @@ pub async fn post_server(
             disk: form["disk"].parse::<u64>().unwrap(),
             network: form["network"].parse::<u64>().unwrap(),
         };
-        scheduler.insert_server(scheduler::Server::new(Uuid::new_v4(), form["name"].clone(), Some(profile))).await;
+        scheduler
+            .insert_server(scheduler::Server::new(
+                Uuid::new_v4(),
+                form["name"].clone(),
+                Some(profile),
+            ))
+            .await;
     } else {
         debug!("Copying agent to server");
         tokio::spawn(async move {
@@ -118,7 +120,7 @@ async fn ssh(host: &str, cmd: &str, sudo_pass: &str) -> BoxResult<String> {
 
     let res = Command::new("ssh")
         .arg(host)
-        .arg(format!("echo {} | sudo -S screen -S backup -d -m {}", sudo_pass, cmd))
+        .arg(format!("echo {} | sudo -S screen -S backup -d -L -m {}", sudo_pass, cmd))
         .spawn()?
         .wait_with_output()
         .await?;
@@ -130,7 +132,16 @@ pub async fn get_task(scheduler: Scheduler) -> Result<impl warp::Reply, warp::re
     let source_template = include_str!("./pages/task.hbs");
     let scheduler = scheduler.lock().await;
     let mut map = HashMap::<&'static str, _>::new();
-    map.insert("tasks", scheduler.get_tasks());
+    let tasks: Vec<HashMap<_,_>> = scheduler.get_tasks().iter().map(|x| {
+        vec![
+            ("name", x.name().clone()),
+            ("realtime", format!("{}", x.realtime())),
+            ("image", x.image().clone()),
+            ("request", format!("{:#?}", x.request())),
+            ("profile", format!("{:#?}", x.debug_profile()))
+        ].into_iter().collect()
+    }).collect();
+    map.insert("tasks", tasks);
 
     let res = HBS.render_template(&source_template[..], &map).unwrap();
     Ok(warp::reply::html(res))
@@ -152,12 +163,14 @@ pub async fn post_task(
     } else {
         None
     };
+    let cmd = if form["cmd"].is_empty() { None } else { Some(form["cmd"].clone()) };
     let task = scheduler::Task::new(
         form["name"].clone(),
         request,
         form["image"].clone(),
         form.contains_key("realtime"),
+        cmd,
     );
-    scheduler.add_task(task).await;
+    scheduler.insert_task(task).await;
     Ok(warp::reply::reply())
 }

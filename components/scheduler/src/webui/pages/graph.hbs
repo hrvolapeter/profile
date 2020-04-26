@@ -5,49 +5,52 @@
 <div id="flow-graph"></div>
 
 <script type="text/javascript">
-let socket = new WebSocket("ws://" + window.location.host + "/api/schedule/graph/");
-socket.onopen = function(e) {
-  {{!-- alert("[open] Connection established"); --}}
-};
-
-socket.onmessage = function(event) {
-    let data = JSON.parse(event.data)
-    let nodes = data.nodes
-    let edges = data.edges
-    plotNetwork(nodes, edges)
-};
-
-socket.onclose = function(event) {
-  if (event.wasClean) {
-    alert(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
-  } else {
-    // e.g. server process killed or network down
-    // event.code is usually 1006 in this case
-    alert('[close] Connection died');
-  }
-};
-
-socket.onerror = function(error) {
-  alert(`[error] ${error.message}`);
-};
-
-function plotNetwork(nodes, edges) {
-  // create a network
-  var container = document.getElementById('flow-graph');
-  var data = {
-    nodes: nodes,
-    edges: edges
+  let socket = new WebSocket("ws://" + window.location.host + "/api/schedule/graph/");
+  socket.onopen = function (e) {
   };
-  var options = {
-    layout: {
-    },
-    edges: {
-      smooth: true,
-      arrows: {to : true }
+
+  socket.onmessage = function (event) {
+    plotNetwork(event.data)
+  };
+
+  socket.onclose = function (event) {
+    if (event.wasClean) {
+      alert(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+    } else {
+      // e.g. server process killed or network down
+      // event.code is usually 1006 in this case
+      alert('[close] Connection died');
     }
   };
-  var network = new vis.Network(container, data, options);
-}
+
+  socket.onerror = function (error) {
+    alert(`[error] ${error.message}`);
+  };
+
+  function plotNetwork(dotstring) {
+    // create a network
+    let container = document.getElementById('flow-graph');
+    let options = {
+      layout: {
+      },
+      edges: {
+        smooth: true,
+        arrows: { to: true }
+      },
+      physics: {
+        barnesHut: {
+          springConstant: 0.07,
+          gravitationalConstant: -50000
+        }
+      }
+    };
+    let parsedData = vis.network.convertDot(dotstring);
+    let data = {
+      nodes: parsedData.nodes,
+      edges: parsedData.edges
+    };
+    let network = new vis.Network(container, data, options);
+  }
 </script>
 
 {{> footer }}

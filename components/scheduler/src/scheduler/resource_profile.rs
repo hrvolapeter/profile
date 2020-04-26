@@ -1,9 +1,10 @@
-use std::cmp::Ordering;
-use derive_more::{Add, AddAssign, Sub, SubAssign};
 use crate::import::*;
-use rust_decimal::prelude::ToPrimitive;
+use derive_more::{Add, AddAssign, Sub, SubAssign};
+use std::cmp::Ordering;
 
-#[derive(Default, Copy, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign)]
+#[derive(
+    Default, Copy, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign,
+)]
 pub struct ResourceProfile {
     pub ipc: Decimal,
     pub memory: u64,
@@ -12,6 +13,9 @@ pub struct ResourceProfile {
 }
 
 impl ResourceProfile {
+    pub fn one() -> Self {
+        Self { ipc: one(), memory: 1, network: 1, disk: 1 }
+    }
     pub fn normalize(&self, other: &ResourceProfile) -> NormalizedResourceProfile {
         NormalizedResourceProfile {
             ipc: self.ipc.normalize_to(&other.ipc),
@@ -35,13 +39,12 @@ const fn one() -> Decimal {
 }
 
 impl NormalizedResourceProfile {
-    pub const MAX: NormalizedResourceProfile = NormalizedResourceProfile {ipc: one(), disk: one(), memory: one(), network: one()};
+    pub const MAX: NormalizedResourceProfile =
+        NormalizedResourceProfile { ipc: one(), disk: one(), memory: one(), network: one() };
 
-    pub fn inner_product(&self) -> u64 {
-        let product = self.ipc + self.memory + self.network + self.disk;
-        product.to_u64().unwrap()
+    pub fn inner_product(&self) -> Decimal {
+        self.ipc + self.memory + self.network + self.disk
     }
-
 }
 
 impl Ord for NormalizedResourceProfile {
@@ -61,7 +64,7 @@ mod test {
     use super::*;
     #[test]
     fn one() {
-        assert_eq!(one(), Decimal::new(1,0));
+        assert_eq!(one(), Decimal::new(1, 0));
     }
 }
 
@@ -71,7 +74,9 @@ trait DecimalNormalize {
 
 impl DecimalNormalize for Decimal {
     fn normalize_to(&self, other: &Decimal) -> Decimal {
-        debug_assert!(self < other);
+        // TODO: task can have higher profile than the server it running one
+        // Server profile should be updated if task has better performance than benchmark
+        // debug_assert!(self < other);
         self / other
     }
 }

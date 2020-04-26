@@ -7,8 +7,9 @@ use std::io::BufWriter;
 use std::io::Read;
 use std::io::Write;
 use std::thread;
+pub type BoxResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
-pub fn run(paths: Vec<&str>, size: u32) -> Result<(), Box<dyn Error>> {
+pub fn run(paths: Vec<&str>, size: u32) -> BoxResult<()> {
     let handles: Vec<_> = paths
         .iter()
         .clone()
@@ -38,7 +39,7 @@ pub fn run(paths: Vec<&str>, size: u32) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn benchmark_write(p: String, size: u32) -> Result<(), Box<dyn Error>> {
+fn benchmark_write(p: String, size: u32) -> BoxResult<()> {
     let mut vector = Vec::new();
 
     let mut rng = rand::thread_rng();
@@ -56,7 +57,7 @@ fn benchmark_write(p: String, size: u32) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn benchmark_read(p: String) -> Result<Digest, Box<dyn Error>> {
+fn benchmark_read(p: String) -> BoxResult<Digest> {
     let mut context = Context::new(&SHA256);
     let mut buffer = [0; 4096 * 4];
     let file = OpenOptions::new().read(true).open(p)?;

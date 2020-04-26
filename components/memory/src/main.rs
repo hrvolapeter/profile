@@ -1,10 +1,7 @@
-#![feature(test)]
-
 use clap::{App, Arg};
 use memory::run;
-use std::error::Error;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> memory::BoxResult<()> {
     let matches = App::new("memory")
         .arg(Arg::with_name("size").short("s").long("size").required(true).takes_value(true))
         .get_matches();

@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::HashSet;
 
 pub trait MinimumCostFlow {
     fn minimum_cost_flow(&mut self);
@@ -41,7 +42,10 @@ impl<T: Clone + Debug> MinimumCostFlow for Graph<T> {
             for edge in &self.edges {
                 let u = edge.source.0;
                 let v = edge.target.0;
-                if distance[u] != Cost::MAX && distance[u] + edge.cost < distance[v] {
+                if distance[u] != Cost::MAX
+                    && distance[u] + edge.cost < distance[v]
+                    && edge.capacity != Capacity(0)
+                {
                     distance[v] = distance[u] + edge.cost;
                     parent[v] = ToParent::OverEdge(edge.index);
                 }
@@ -51,24 +55,21 @@ impl<T: Clone + Debug> MinimumCostFlow for Graph<T> {
         for edge in &self.edges.clone() {
             let u = edge.source.0;
             let v = edge.target.0;
-            let diff = (distance[u] + edge.cost).0 - distance[v].0;
+            let diff = (distance[u] + edge.cost).0.checked_sub(distance[v].0).unwrap_or(i64::MIN);
 
-            if distance[u] != Cost::MAX && diff < 0 {
+            if distance[u] != Cost::MAX && edge.capacity != Capacity(0) && diff < 0 {
                 let mut edge_i = edge;
-                let mut cycle_edges = vec![];
-                let mut diff_traversed_back = 0;
+                let mut cycle_edges = HashSet::new();
                 loop {
                     edge_i = match parent[edge_i.source.0] {
                         ToParent::OverEdge(e) => &self.edges[e.0],
                         _ => unreachable!(),
                     };
-                    cycle_edges.push(edge_i.clone());
-                    diff_traversed_back += edge_i.cost.0;
-                    if diff == diff_traversed_back {
+                    if !cycle_edges.insert(edge_i.clone()) {
                         break;
                     }
                 }
-                return Some(cycle_edges);
+                return Some(cycle_edges.into_iter().collect());
             }
         }
 
@@ -79,6 +80,7 @@ impl<T: Clone + Debug> MinimumCostFlow for Graph<T> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn cycle() {
@@ -112,16 +114,17 @@ mod test {
         graph.add_edge(b, graph.sink, Capacity(6), Cost(1));
 
         graph.minimum_cost_flow();
-        assert_eq!(graph.edges[4].flow.0, 6);
-        assert_eq!(graph.edges[4].capacity.0, 6);
-        assert_eq!(graph.edges[3].flow.0, 0);
-        assert_eq!(graph.edges[3].capacity.0, 1);
-        assert_eq!(graph.edges[2].flow.0, 2);
-        assert_eq!(graph.edges[2].capacity.0, 3);
-        assert_eq!(graph.edges[1].flow.0, 4);
-        assert_eq!(graph.edges[1].capacity.0, 4);
-        assert_eq!(graph.edges[0].flow.0, 2);
-        assert_eq!(graph.edges[0].capacity.0, 2);
+        assert_eq!(
+            r#"digraph g {
+"0" -> "2" [label="2/2;1"];
+"0" -> "3" [label="4/4;1"];
+"2" -> "3" [label="2/3;1"];
+"2" -> "1" [label="0/1;4"];
+"3" -> "1" [label="6/6;1"];
+
+}"#,
+            graph.graphviz()
+        );
     }
 
     #[test]
@@ -130,32 +133,50 @@ mod test {
 
         let task1 = graph.add_node(1);
         let task2 = graph.add_node(2);
-        let cluster = graph.add_node(3);
-        let unscheduled1 = graph.add_node(4);
-        let unscheduled2 = graph.add_node(5);
-        let server = graph.add_node(6);
+        let task3 = graph.add_node(3);
+        let cluster = graph.add_node(4);
+        let unscheduled1 = graph.add_node(5);
+        let unscheduled2 = graph.add_node(6);
+        let unscheduled3 = graph.add_node(7);
+        let server = graph.add_node(8);
 
         graph.add_edge(graph.source, task1, Capacity(1), Cost(0));
         graph.add_edge(graph.source, task2, Capacity(1), Cost(0));
+        graph.add_edge(graph.source, task3, Capacity(1), Cost(0));
         graph.add_edge(task1, cluster, Capacity(1), Cost(0));
         graph.add_edge(task2, cluster, Capacity(1), Cost(0));
+        graph.add_edge(task3, cluster, Capacity(1), Cost(0));
         graph.add_edge(task1, unscheduled1, Capacity(1), Cost(0));
         graph.add_edge(task2, unscheduled2, Capacity(1), Cost(0));
-        graph.add_edge(unscheduled1, graph.sink, Capacity(1), Cost(67_492_958_072));
-        graph.add_edge(unscheduled2, graph.sink, Capacity(1), Cost(67_492_958_072));
-        graph.add_edge(cluster, server, Capacity(2), Cost(33_746_479_036));
-        graph.add_edge(server, graph.sink, Capacity(2), Cost(1));
+        graph.add_edge(task3, unscheduled3, Capacity(1), Cost(0));
+        graph.add_edge(unscheduled1, graph.sink, Capacity(1), Cost(800));
+        graph.add_edge(unscheduled2, graph.sink, Capacity(1), Cost(800));
+        graph.add_edge(unscheduled3, graph.sink, Capacity(1), Cost(800));
+        graph.add_edge(cluster, server, Capacity(3), Cost(400));
+        graph.add_edge(server, graph.sink, Capacity(3), Cost(1));
 
+        println!("{}", graph.graphviz());
         graph.minimum_cost_flow();
-        assert_eq!(graph.edges[4].flow.0, 0);
-        assert_eq!(graph.edges[4].capacity.0, 1);
-        assert_eq!(graph.edges[3].flow.0, 1);
-        assert_eq!(graph.edges[3].capacity.0, 1);
-        assert_eq!(graph.edges[2].flow.0, 1);
-        assert_eq!(graph.edges[2].capacity.0, 1);
-        assert_eq!(graph.edges[1].flow.0, 1);
-        assert_eq!(graph.edges[1].capacity.0, 1);
-        assert_eq!(graph.edges[0].flow.0, 1);
-        assert_eq!(graph.edges[0].capacity.0, 1);
+
+        assert_eq!(
+            r#"digraph g {
+"0" -> "2" [label="1/1;0"];
+"0" -> "3" [label="1/1;0"];
+"0" -> "4" [label="1/1;0"];
+"2" -> "5" [label="1/1;0"];
+"3" -> "5" [label="1/1;0"];
+"4" -> "5" [label="1/1;0"];
+"2" -> "6" [label="0/1;0"];
+"3" -> "7" [label="0/1;0"];
+"4" -> "8" [label="0/1;0"];
+"6" -> "1" [label="0/1;800"];
+"7" -> "1" [label="0/1;800"];
+"8" -> "1" [label="0/1;800"];
+"5" -> "9" [label="3/3;400"];
+"9" -> "1" [label="3/3;1"];
+
+}"#,
+            graph.graphviz()
+        );
     }
 }

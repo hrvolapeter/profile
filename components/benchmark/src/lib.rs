@@ -2,15 +2,16 @@
 
 use measure::ApplicationProfile;
 use std::error::Error;
+pub type BoxResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
-pub async fn run() -> Result<Vec<ApplicationProfile>, Box<dyn Error>> {
+pub async fn run() -> BoxResult<Vec<ApplicationProfile>> {
     let f = Box::new(move || {
         workload().unwrap();
     });
-    measure::run(None, Some(f)).await
+    measure::run(None, Some(f), None).await
 }
 
-fn workload() -> Result<(), Box<dyn Error>> {
+fn workload() -> BoxResult<()> {
     cpu::run()?;
     memory::run(1)?;
     let paths = vec![

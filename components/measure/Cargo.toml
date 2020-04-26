@@ -14,7 +14,6 @@ nix = "0.17.0"
 serde_json = "1.0.48"
 serde = {version = "1.0", features = ["derive"] }
 csv = "1.1.3"
-from_hashmap = { path = "../from_hashmap"} 
 clap = { git = "https://github.com/clap-rs/clap/" }
 ctrlc = "3.1.4"
 log = "0.4.8"

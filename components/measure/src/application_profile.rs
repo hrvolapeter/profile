@@ -1,10 +1,10 @@
 use crate::bpf::profile::BpfProfile;
 use crate::perf::profile::PerfProfile;
 use crate::pmap::PmapProfile;
+use crate::BoxResult;
 use csv::Writer;
 use itertools::izip;
 use serde::Serialize;
-use std::error::Error;
 
 #[derive(Debug, Serialize, Default)]
 pub struct ApplicationProfile {
@@ -47,7 +47,7 @@ impl ApplicationProfile {
             .collect()
     }
 
-    pub fn out(v: Vec<ApplicationProfile>) -> Result<String, Box<dyn Error>> {
+    pub fn out(v: Vec<ApplicationProfile>) -> BoxResult<String> {
         let mut wtr = Writer::from_writer(vec![]);
         for i in v {
             wtr.serialize(i)?;

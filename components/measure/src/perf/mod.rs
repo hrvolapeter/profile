@@ -1,12 +1,11 @@
 use self::profile::PerfProfile;
+use crate::BoxResult;
 use log::debug;
 use log::error;
-use std::error::Error;
 use std::process::Stdio;
 use tokio::process::Child;
 use tokio::process::Command;
 use tokio::sync::mpsc::Receiver;
-
 pub mod profile;
 
 const PERF_ARGS: &[&str] = &[
@@ -26,7 +25,7 @@ impl Perf {
         Self { pids, receiver }
     }
 
-    pub async fn run(mut self) -> Result<Vec<PerfProfile>, Box<dyn Error>> {
+    pub async fn run(mut self) -> BoxResult<Vec<PerfProfile>> {
         let cmd = Command::new("/usr/bin/perf")
             .args(PERF_ARGS)
             .arg(format!("-p {}", &self.pids[..]))
@@ -48,7 +47,7 @@ impl Perf {
     }
 }
 
-fn stop_process(process: &Child) -> Result<(), impl Error> {
+fn stop_process(process: &Child) -> Result<(), impl std::error::Error> {
     use nix::sys::signal::{kill, Signal};
     use nix::unistd::Pid;
 

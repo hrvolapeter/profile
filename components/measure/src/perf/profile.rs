@@ -1,12 +1,8 @@
-use from_hashmap::FromHashmap;
+use crate::BoxResult;
 use log::trace;
 use std::collections::HashMap;
-use std::error::Error;
 
-pub trait FromHashmap<T>: Default {
-    fn from_hashmap(hm: HashMap<String, u64>) -> T;
-}
-#[derive(Debug, Default, FromHashmap)]
+#[derive(Debug, Default)]
 pub struct PerfProfile {
     pub l1_dcache_loads: u64,
     pub l1_dcache_load_misses: u64,
@@ -17,43 +13,37 @@ pub struct PerfProfile {
     pub instructions: u64,
 }
 
-type Record = (String, u64, Option<String>, String);
+type Record = (String, String, Option<String>, String);
 
 impl PerfProfile {
-    pub fn from_stream(s: String) -> Result<Vec<Self>, Box<dyn Error>> {
+    pub fn from_stream(s: String) -> BoxResult<Vec<Self>> {
         trace!("Perf stdout: {}", s);
         let mut rdr = csv::ReaderBuilder::new().has_headers(false).from_reader(s.as_bytes());
         let res: Vec<Record> = rdr.deserialize().filter_map(Result::ok).collect();
-
-        Ok(build_measurements(transpose(res)))
+        let res = group_by_key(res);
+        Ok(res.into_iter().map(|x| PerfProfile {
+            l1_dcache_loads: *x.get("L1-dcache-load").unwrap_or(&0),
+            l1_dcache_load_misses: *x.get("L1-dcache-load-misses").unwrap_or(&0),
+            l1_icache_load_misses: *x.get("L1-icache-load-misses").unwrap_or(&0),
+            llc_load_misses: *x.get("LLC-load-misses").unwrap_or(&0),
+            llc_loads: *x.get("LLC-load").unwrap_or(&0),
+            cycles: *x.get("cycles").unwrap_or(&0),
+            instructions: *x.get("instructions").unwrap_or(&0),
+        }).collect())
     }
 }
 
-fn build_measurements(mut m: HashMap<String, Vec<u64>>) -> Vec<PerfProfile> {
-    let keys: Vec<String> = m.keys().cloned().collect();
-    let first_vec = m.keys().next().expect("perf should have returned some results");
+fn group_by_key(rows: Vec<Record>) -> Vec<HashMap<String, u64>> {
     let mut res = vec![];
-    for _ in 0..m[first_vec].len() {
-        let mut measurement = HashMap::new();
-        for k in &keys {
-            measurement
-                .entry(k.to_lowercase().replace("-", "_"))
-                .or_insert_with(|| m.get_mut(&k[..]).unwrap().pop().unwrap());
+    let mut profile = HashMap::new();
+    let time = rows[0].0.clone();
+    for row in rows {
+        if time != row.0 {
+            res.push(profile);
+            profile = HashMap::new();
         }
-        res.push(PerfProfile::from_hashmap(measurement));
+        profile.insert(row.3, row.1.parse::<u64>().unwrap_or(0));
     }
-    res
-}
-
-fn transpose(records: Vec<Record>) -> HashMap<String, Vec<u64>> {
-    let mut res = HashMap::new();
-    for r in records {
-        let counter = res.entry(r.3).or_insert_with(|| vec![]);
-        counter.push(r.1)
-    }
-    let l = res.values().next().expect("Perf should have some results").len();
-    for (key, val) in &res {
-        assert_eq!(l, val.len(), "'{}' different length", key);
-    }
+    res.push(profile);
     res
 }

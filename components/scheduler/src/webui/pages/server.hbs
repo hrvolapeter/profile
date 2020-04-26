@@ -17,12 +17,12 @@
   <tbody>
     {{#each servers}}
     <tr>
-      <td><b>{{name}}</b></td>
+      <td><b>{{hostname}}</b></td>
       <td>{{id}}</td>
-      <td>{{current.ipc}}</td>
-      <td>{{current.disk}}</td>
-      <td>{{current.network}}</td>
-      <td>{{current.memory}}</td>
+      <td>{{profile.ipc}}</td>
+      <td>{{profile.disk}}</td>
+      <td>{{profile.network}}</td>
+      <td>{{profile.memory}}</td>
     </tr>
     {{/each}}
   </tbody>
@@ -37,7 +37,7 @@
   </div>
   <div class="form-group">
     <label for="sudo">Sudo password</label>
-    <input type="text" class="form-control" name="sudo" placeholder="Sudo password">
+    <input type="password" class="form-control" name="sudo" placeholder="Sudo password">
   </div>
   <div class="form-check">
     <label for="host">Host address</label>

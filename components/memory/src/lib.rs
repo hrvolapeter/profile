@@ -4,11 +4,12 @@ use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 use std::error::Error;
 use std::thread;
+pub type BoxResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
 /// Arguments:
 ///
 /// * `size`: Amount of data wirtten to memory in TODO: (what unit?)
-pub fn run(size: u32) -> Result<(), Box<dyn Error>> {
+pub fn run(size: u32) -> BoxResult<()> {
     let handles: Vec<_> =
         (0..num_cpus::get()).map(|_| thread::spawn(move || benchmark(size).unwrap())).collect();
 

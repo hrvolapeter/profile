@@ -1,5 +1,5 @@
-use super::Displayable;
 use crate::import::*;
+use cost_flow::Graphable;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]
 pub struct VirtualResource {
@@ -13,8 +13,8 @@ impl VirtualResource {
     }
 }
 
-impl Displayable for VirtualResource {
-    fn name(&self) -> String {
+impl Graphable for VirtualResource {
+    fn name_label(&self) -> String {
         self.name.clone()
     }
 }
