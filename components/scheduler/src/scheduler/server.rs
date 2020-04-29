@@ -1,4 +1,4 @@
-use crate::import::*;
+use crate::prelude::*;
 use cost_flow::Graphable;
 use getset::{Getters, Setters};
 

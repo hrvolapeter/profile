@@ -1,4 +1,4 @@
-use crate::import::*;
+use crate::prelude::*;
 use cost_flow::Graphable;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Hash, Debug)]

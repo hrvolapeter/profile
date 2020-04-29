@@ -1,10 +1,10 @@
-use crate::import::*;
+use crate::prelude::*;
 use cost_flow::Graphable;
 use getset::{Getters, Setters};
 use std::hash::Hash;
 use std::hash::Hasher;
 
-#[derive(Clone, Debug, Serialize, Eq, PartialEq, Getters, Setters)]
+#[derive(Clone, Debug, Serialize, Eq, Getters, Setters)]
 pub struct Task<T> {
     #[getset(get = "pub")]
     id: Uuid,
@@ -46,6 +46,12 @@ impl<T> Task<T> {
     }
 }
 
+impl <T> PartialEq for Task<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
 impl<T> Hash for Task<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
@@ -64,14 +70,14 @@ impl Task<super::ResourceProfile> {
             profiles: self
                 .profiles
                 .iter()
-                .map(|x| (x.0.clone(), x.1.iter().map(|x| x.normalize(max_profile)).collect()))
+                .map(|x| (*x.0, x.1.iter().map(|x| x.normalize(max_profile)).collect()))
                 .collect(),
             schedulable: self.schedulable,
         }
     }
 
     pub fn insert_profile(&mut self, server_id: Uuid, profile: super::ResourceProfile) {
-        let entry = self.profiles.entry(server_id).or_insert(vec![]);
+        let entry = self.profiles.entry(server_id).or_insert_with(|| vec![]);
         (*entry).push(profile);
     }
 }
@@ -81,7 +87,7 @@ impl Task<super::ResourceProfile> {
         self.profiles
             .values()
             .flatten()
-            .fold(Default::default(), |acc, x| (acc + x.clone()) / super::ResourceProfile::two())
+            .fold(Default::default(), |acc, x| (acc + *x) / super::ResourceProfile::two())
     }
 }
 

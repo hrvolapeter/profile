@@ -67,7 +67,7 @@ impl BpfProfileBuilder {
 }
 
 impl BpfProfile {
-    pub fn from_stream(s: &String) -> BoxResult<Self> {
+    pub fn from_stream(s: &str) -> BoxResult<Self> {
         trace!("Bpf stdout message: {:?}", &s);
         let res: Vec<_> = s
             .lines()

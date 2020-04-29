@@ -1,4 +1,4 @@
-use crate::import::*;
+use crate::prelude::*;
 use derive_more::{Add, AddAssign, Sub, SubAssign, Div};
 use std::cmp::Ordering;
 
@@ -32,20 +32,20 @@ impl std::ops::Div for ResourceProfile {
     type Output = Self;
 
     fn div(mut self, rhs: Self) -> Self::Output {
-        self.ipc = self.ipc / rhs.ipc;
-        self.memory = self.memory / rhs.memory;
-        self.network = self.network / rhs.network;
-        self.disk = self.disk / rhs.disk;
+        self.ipc /= rhs.ipc;
+        self.memory /= rhs.memory;
+        self.network /= rhs.network;
+        self.disk /= rhs.disk;
         self
     }
 }
 
 #[derive(Default, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign, Div)]
 pub struct NormalizedResourceProfile {
-    pub ipc: Decimal,
-    pub memory: Decimal,
-    pub network: Decimal,
-    pub disk: Decimal,
+    ipc: Decimal,
+    memory: Decimal,
+    network: Decimal,
+    disk: Decimal,
 }
 
 const fn one() -> Decimal {

@@ -10,7 +10,9 @@
     clippy::too_many_arguments,
     clippy::too_many_lines,
     clippy::type_complexity,
-    clippy::use_self
+    clippy::use_self,
+    clippy::single_match_else,
+    clippy::wildcard_imports,
 )]
 
 mod rpc;
@@ -63,10 +65,9 @@ fn setup_logger() -> Result<(), fern::InitError> {
     Ok(())
 }
 
-mod import {
-    #[allow(warnings)]
+mod prelude {
     pub(crate) use {
-        log::debug, log::error, log::trace, rust_decimal::Decimal, serde::Deserialize,
+        log::debug, log::error, log::trace, rust_decimal::Decimal,
         serde::Serialize, std::collections::HashMap, std::path::Path, std::str::FromStr,
         std::sync::Arc, tokio::sync::Mutex, uuid::Uuid, std::convert::TryInto,
     };

@@ -1,4 +1,4 @@
-use crate::import::*;
+use crate::prelude::*;
 use crate::scheduler;
 use futures::channel::mpsc;
 use futures::{FutureExt, StreamExt};
@@ -132,7 +132,7 @@ impl Scheduler for SchedulerService {
 impl Into<scheduler::ResourceProfile> for proto::Profile {
     fn into(self) -> scheduler::ResourceProfile {
         scheduler::ResourceProfile {
-            ipc: Decimal::new(self.instructions as i64, 0).checked_div(Decimal::new(self.cycles as i64, 0)).unwrap_or(Decimal::new(0,0)),
+            ipc: Decimal::new(self.instructions.try_into().unwrap(), 0).checked_div(Decimal::new(self.cycles.try_into().unwrap(), 0)).unwrap_or_else(|| Decimal::new(0,0)),
             disk: self.vfs_read + self.vfs_write,
             memory: self.memory,
             network: self.tcp_send_bytes + self.tcp_recv_bytes,

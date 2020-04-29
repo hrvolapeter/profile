@@ -15,7 +15,6 @@ pub fn run(paths: Vec<&str>, size: u32) -> BoxResult<()> {
         .clone()
         .map(|x| {
             let x = (*x).to_string();
-            let size = size.clone();
             thread::spawn(move || benchmark_write(x, size).unwrap())
         })
         .collect();

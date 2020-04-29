@@ -34,7 +34,7 @@ pub async fn run(
 
     let pids: Vec<u64> = if let Some(x) = pids {
         debug!("Pids provided, registering {:?}", x);
-        x.iter().map(|x| x.clone()).collect()
+        x.to_vec()
     } else {
         let main = main.expect("Required argument missing");
         let mut bpf_sender = bpf_sender.clone();
@@ -64,7 +64,7 @@ pub async fn run(
     let pmap = Pmap::new(&pids[..], pmap_receiver)?.lop();
     let perf = Perf::new(&pids[..], perf_receiver).run();
     let senders: Vec<_> =
-        [bpf_sender, perf_sender, pmap_sender, ctrlc_sender].iter().cloned().collect();
+        [bpf_sender, perf_sender, pmap_sender, ctrlc_sender].to_vec();
 
     if let Some(mut cancel_channel) = cancel_channel {
         tokio::spawn(async move {

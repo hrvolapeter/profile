@@ -1,7 +1,19 @@
 #![deny(warnings)]
 #![deny(clippy::pedantic)]
-#![allow(clippy::new_without_default)]
-#![allow(clippy::wildcard_imports)]
+#![allow(
+    clippy::default_trait_access,
+    clippy::missing_errors_doc,
+    clippy::module_name_repetitions,
+    clippy::must_use_candidate,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::type_complexity,
+    clippy::use_self,
+    clippy::single_match_else,
+    clippy::wildcard_imports,
+    clippy::new_without_default,
+    clippy::cast_sign_loss,
+)]
 
 mod bfs;
 mod ford_fulkerson;

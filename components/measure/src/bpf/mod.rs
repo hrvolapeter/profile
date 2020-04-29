@@ -42,7 +42,7 @@ impl Bpf {
 
             let out = cmd.wait_with_output().await?;
             let s = String::from_utf8_lossy(&out.stdout).to_string();
-            if let Ok(profile) = BpfProfile::from_stream(&s) {
+            if let Ok(profile) = BpfProfile::from_stream(&s[..]) {
                 res.push(profile);
             } else {
                 warn!("No bpf parsed from: \"{}\"", s);

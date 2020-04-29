@@ -7,8 +7,7 @@ use super::Server;
 use super::Task;
 use super::TaskCommand;
 use super::VirtualResource;
-use crate::import::*;
-use cost_flow;
+use crate::prelude::*;
 use cost_flow::{Capacity, Cost};
 use futures::channel::mpsc;
 use futures_util::sink::SinkExt;
@@ -21,8 +20,10 @@ type TaskID = Uuid;
 pub struct Scheduler {
     tasks: HashMap<TaskID, Task<ResourceProfile>>,
     servers: HashMap<ServerID, Server<ResourceProfile>>,
+    // Channel to agent running on server
     server_subscriptions: HashMap<ServerID, ServerTaskSubscription>,
     schedule: HashMap<TaskID, ServerID>,
+    // Channel for updating web ui
     notif_channel: (watch::Sender<String>, watch::Receiver<String>),
 }
 
@@ -37,6 +38,10 @@ impl Scheduler {
         }
     }
 
+    /// Check if task was scheduler before, if so and it's finished running make it schedulable
+    /// else create a new task.
+    /// 
+    /// Schedulability property is based on the task name
     pub async fn insert_task(&mut self, task: Task<ResourceProfile>) {
         if let Some(task) = self.tasks.values_mut().find(|x| x.name() == task.name()) {
             task.set_schedulable(true);
@@ -72,20 +77,27 @@ impl Scheduler {
         self.server_subscriptions.insert(id, tx);
     }
 
+    /// Runs scheduling pipeline
+    /// 1. computes flow graph
+    /// 2. creates new schedule
+    /// 3. assign tasks to server based on schedule (agent are notified of the change)
     pub async fn schedule(&mut self) {
         use cost_flow::MinimumCostFlow;
         let (servers, tasks) = self.normalized();
-        let mut graph = self.build_flow_graph(servers, tasks);
+        let mut graph = self.build_flow_graph(&servers, &tasks);
         graph.minimum_cost_flow();
         let paths = graph.paths();
         let _ = self.place_tasks(paths).await;
         let _ = self.notif_channel.0.broadcast(graph.graphviz());
     }
 
+    /// Finds maximum profile for all servers and uses the most performant server as a maximum value
+    /// Each resource is normalized to value between (0, 1), the max profile beeing all 1
     fn normalized(&self) -> (HashMap<ServerID, NormalizedServer>, HashMap<TaskID, NormalizedTask>) {
+        use std::cmp::max;
+
         debug!("Normalizing profiles");
         // TODO: 1. check if tasks have higher profile than it's server and update if so
-        use std::cmp::max;
         // 2. global maximum profile
         let max_profile = self
             .servers
@@ -97,14 +109,31 @@ impl Scheduler {
                 network: max(acc.network, x.network),
                 memory: max(acc.memory, x.memory),
             });
-        let servers = self.servers.iter().map(|(k, v)| (k.clone(), v.normalize(&max_profile))).collect();
-        let tasks = self.tasks.iter().map(|(k, v)| (k.clone(), v.normalize(&max_profile))).collect();
+        let servers = self.servers.iter().map(|(k, v)| (*k, v.normalize(&max_profile))).collect();
+        let tasks = self.tasks.iter().map(|(k, v)| (*k, v.normalize(&max_profile))).collect();
         (servers, tasks)
     }
 
+    /// Assign task to a server based on result from flow graph
     async fn place_tasks(&mut self, paths: Vec<cost_flow::Path<Node>>) -> BoxResult<()> {
-        debug!("Assign tasks to servers from graph");
         use super::task::State;
+
+        fn get_server_task(
+            path: cost_flow::Path<Node>,
+        ) -> BoxResult<(NormalizedServer, NormalizedTask)> {
+            let mut server = None;
+            let mut tasks = None;
+            for edge in path.edges {
+                match edge.source {
+                    cost_flow::Node::Node(Node::Server(s)) => server = Some(s.clone()),
+                    cost_flow::Node::Node(Node::Task(s)) => tasks = Some(s.clone()),
+                    _ => {}
+                }
+            }
+            Ok((server.ok_or("no server")?, tasks.ok_or("no task")?))
+        }
+
+        debug!("Assign tasks to servers from graph");
         let mut normalized_tasks = HashMap::new();
 
         // 1. Start with empty schedule
@@ -136,21 +165,6 @@ impl Scheduler {
             self.schedule_task(&server_id, task, State::Remove).await;
         }
 
-        fn get_server_task(
-            path: cost_flow::Path<Node>,
-        ) -> BoxResult<(NormalizedServer, NormalizedTask)> {
-            let mut server = None;
-            let mut tasks = None;
-            for edge in path.edges {
-                match edge.source {
-                    cost_flow::Node::Node(Node::Server(s)) => server = Some(s.clone()),
-                    cost_flow::Node::Node(Node::Task(s)) => tasks = Some(s.clone()),
-                    _ => {}
-                }
-            }
-            Ok((server.ok_or("no server")?, tasks.ok_or("no task")?))
-        }
-
         Ok(())
     }
 
@@ -166,8 +180,8 @@ impl Scheduler {
 
     fn build_flow_graph(
         &self,
-        servers: HashMap<ServerID,NormalizedServer>,
-        tasks: HashMap<TaskID, NormalizedTask>
+        servers: &HashMap<ServerID,NormalizedServer>,
+        tasks: &HashMap<TaskID, NormalizedTask>
     ) -> cost_flow::Graph<Node> {
         debug!("Building graph");
         let mut graph = cost_flow::Graph::new();
@@ -176,41 +190,45 @@ impl Scheduler {
         let task_count = tasks.len();
         let mut servers_node = HashMap::new();
     
+        // 1. Get current server utilization
         let mut server_usage = HashMap::new();
         for (key, value) in &self.schedule {
-            let val = server_usage.entry(value).or_insert(Default::default());
+            let val = server_usage.entry(value).or_insert_with(Default::default);
             *val += tasks[key].avg_profile(value).inner_product();
         }
     
+        // 2. Add servers to flow graph
         for server in servers.values() {
-            // 1. get profile based on benchmark
-            let cost = if let Some(profile) = server.profile().as_ref().map(|x| x.inner_product()) {
-                 // 2.1 Get server usage, if server unused (not found) 0
-                let server_usage = server_usage.get(server.id()).map(|x: &Decimal| x.clone()).unwrap_or_else(|| Default::default());
-                // 2.2 (MAX - profile + usage)
+            // 2.1. get profile based on benchmark
+            let cost = if let Some(profile) = server.profile().as_ref().map(NormalizedResourceProfile::inner_product) {
+                 // 2.2 Get server usage, if server unused (not found) 0
+                let server_usage = server_usage.get(server.id()).map_or_else(Default::default, |x: &Decimal| *x);
+                // 2.3 (MAX - profile + usage)
                 trace!("Server cost: {}: ({} - {} + {}) ", server.hostname(), NormalizedResourceProfile::MAX.inner_product(), profile, server_usage);
                 (NormalizedResourceProfile::MAX.inner_product() - profile + server_usage).scaled_i64()
             } else {
                 i64::MAX
             };
-            debug!("Cost '{}'", cost);
-            let server_node = graph.add_node(Node::Server(server.clone()));
-            servers_node.insert(server.id().clone(), server_node);
+            let node = graph.add_node(Node::Server(server.clone()));
+            servers_node.insert(server.id().clone(), node);
             graph.add_edge(
                 cluster,
-                server_node,
+                node,
                 Capacity(task_count.try_into().unwrap()),
                 Cost(cost),
             );
-            graph.add_edge(server_node, graph.sink, Capacity(task_count.try_into().unwrap()), Cost(0));
+            graph.add_edge(node, graph.sink, Capacity(task_count.try_into().unwrap()), Cost(0));
         }
     
+        // 3. Add tasks to flow graph
         for task in tasks.values() {
+            // 3.1 Task is finished running
             if !task.schedulable() {
                 continue;
             }
-            let cost = if let Some(request) = task.request() { request.inner_product() } else { Decimal::new(0,0) };
+            let cost = task.request().clone().map_or_else(|| Decimal::new(0,0), |x| x.inner_product());
     
+            // 3.2 Connect task with cluster node
             let task_node = graph.add_node(Node::Task(task.clone()));
             graph.add_edge(graph.source, task_node, Capacity(1), Cost(0));
             graph.add_edge(task_node, cluster, Capacity(1), Cost(cost.to_i64().unwrap()));
@@ -218,8 +236,9 @@ impl Scheduler {
                 graph.add_edge(task_node, servers_node[id], Capacity(1), Cost(0));
             }
     
+            // 3.3 Allow tasks to remain unscheduled
             let unscheduled =
-                graph.add_node(Node::VirtualResource(VirtualResource::new("Unscheduled".to_string())));
+                graph.add_node(Node::VirtualResource(VirtualResource::new(format!("Unscheduled {}", task.name()))));
             graph.add_edge(task_node, unscheduled, Capacity(1), Cost(0));
             graph.add_edge(
                 unscheduled,
