@@ -137,6 +137,7 @@ pub async fn get_task(scheduler: Scheduler) -> Result<impl warp::Reply, warp::re
             ("name", x.name().clone()),
             ("realtime", format!("{}", x.realtime())),
             ("image", x.image().clone()),
+            ("schedulable", format!("{}", x.schedulable())),
             ("request", format!("{:#?}", x.request())),
             ("profile", format!("{:#?}", x.debug_profile()))
         ].into_iter().collect()

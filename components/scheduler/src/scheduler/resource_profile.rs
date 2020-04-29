@@ -1,9 +1,9 @@
 use crate::import::*;
-use derive_more::{Add, AddAssign, Sub, SubAssign};
+use derive_more::{Add, AddAssign, Sub, SubAssign, Div};
 use std::cmp::Ordering;
 
 #[derive(
-    Default, Copy, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign,
+    Default, Copy, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign
 )]
 pub struct ResourceProfile {
     pub ipc: Decimal,
@@ -13,9 +13,11 @@ pub struct ResourceProfile {
 }
 
 impl ResourceProfile {
-    pub fn one() -> Self {
-        Self { ipc: one(), memory: 1, network: 1, disk: 1 }
-    }
+    pub const ONE: ResourceProfile = 
+        Self { ipc: one(), memory: 1, network: 1, disk: 1 };
+
+    pub fn two() -> ResourceProfile { Self::ONE + Self::ONE }
+
     pub fn normalize(&self, other: &ResourceProfile) -> NormalizedResourceProfile {
         NormalizedResourceProfile {
             ipc: self.ipc.normalize_to(&other.ipc),
@@ -26,7 +28,19 @@ impl ResourceProfile {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign)]
+impl std::ops::Div for ResourceProfile {
+    type Output = Self;
+
+    fn div(mut self, rhs: Self) -> Self::Output {
+        self.ipc = self.ipc / rhs.ipc;
+        self.memory = self.memory / rhs.memory;
+        self.network = self.network / rhs.network;
+        self.disk = self.disk / rhs.disk;
+        self
+    }
+}
+
+#[derive(Default, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign, Div)]
 pub struct NormalizedResourceProfile {
     pub ipc: Decimal,
     pub memory: Decimal,

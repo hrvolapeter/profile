@@ -35,10 +35,10 @@ impl<'a> Task<'a> {
                 debug!("Container '{}' state: '{}'", id, container.state.status);
                 if !container.state.running {
                     debug!("Exiting profiling for '{}'", id);
-                    client.finish_task(scheduler::FinishTaskRequest {
+                    client.lock().await.finish_task(scheduler::FinishTaskRequest {
                         machine_id: MachineId::get().to_string(),
                         task_id: id.clone(),
-                    });
+                    }).await?;
                     break;
                 }
                 let pid = container.state.pid.try_into()?;
@@ -110,10 +110,10 @@ impl<'a> TaskRunner<'a> {
 
             let config = Config {
                 image: Some(task.image),
-                cmd: task.cmd.map(|x| vec![x]),
+                cmd: task.cmd.map(|x| x.split_whitespace().map(|x| x.to_string()).collect()),
                 ..Default::default()
             };
-            self.docker.create_container(options, config).await?;
+            let _ = self.docker.create_container(options, config).await;
             self.docker.start_container(&task.id[..], None::<StartContainerOptions<String>>).await?;
             let mut task = Task::new(task.id.clone(), client.clone(), &self.docker);
             task.measure().await?;

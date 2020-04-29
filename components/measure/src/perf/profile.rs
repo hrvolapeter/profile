@@ -21,6 +21,7 @@ impl PerfProfile {
         let mut rdr = csv::ReaderBuilder::new().has_headers(false).from_reader(s.as_bytes());
         let res: Vec<Record> = rdr.deserialize().filter_map(Result::ok).collect();
         let res = group_by_key(res);
+        trace!("Grouped {:?}", res);
         Ok(res.into_iter().map(|x| PerfProfile {
             l1_dcache_loads: *x.get("L1-dcache-load").unwrap_or(&0),
             l1_dcache_load_misses: *x.get("L1-dcache-load-misses").unwrap_or(&0),
@@ -36,11 +37,12 @@ impl PerfProfile {
 fn group_by_key(rows: Vec<Record>) -> Vec<HashMap<String, u64>> {
     let mut res = vec![];
     let mut profile = HashMap::new();
-    let time = rows[0].0.clone();
+    let mut time = rows[0].0.clone();
     for row in rows {
         if time != row.0 {
             res.push(profile);
             profile = HashMap::new();
+            time = row.0;
         }
         profile.insert(row.3, row.1.parse::<u64>().unwrap_or(0));
     }

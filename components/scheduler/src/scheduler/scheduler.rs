@@ -15,7 +15,6 @@ use futures_util::sink::SinkExt;
 use tokio::sync::watch;
 use rust_decimal::prelude::ToPrimitive;
 
-type Flows = Vec<cost_flow::Edge<Node>>;
 type ServerTaskSubscription = mpsc::Sender<TaskCommand>;
 type ServerID = Uuid;
 type TaskID = Uuid;
@@ -39,7 +38,11 @@ impl Scheduler {
     }
 
     pub async fn insert_task(&mut self, task: Task<ResourceProfile>) {
-        self.tasks.insert(*task.id(), task);
+        if let Some(task) = self.tasks.values_mut().find(|x| x.name() == task.name()) {
+            task.set_schedulable(true);
+        } else {
+            self.tasks.insert(*task.id(), task);
+        }
         self.schedule().await;
     }
 
@@ -87,8 +90,8 @@ impl Scheduler {
         let max_profile = self
             .servers
             .values()
-            .map(|x| x.profile().unwrap_or_else(|| ResourceProfile::one()))
-            .fold(ResourceProfile::one(), |acc, x| ResourceProfile {
+            .map(|x| x.profile().unwrap_or_else(|| ResourceProfile::ONE))
+            .fold(ResourceProfile::ONE, |acc, x| ResourceProfile {
                 ipc: max(acc.ipc, x.ipc),
                 disk: max(acc.disk, x.disk),
                 network: max(acc.network, x.network),
@@ -102,24 +105,35 @@ impl Scheduler {
     async fn place_tasks(&mut self, paths: Vec<cost_flow::Path<Node>>) -> BoxResult<()> {
         debug!("Assign tasks to servers from graph");
         use super::task::State;
+        let mut normalized_tasks = HashMap::new();
+
+        // 1. Start with empty schedule
+        let old = self.schedule.clone();
+        self.schedule = HashMap::new();
         for path in paths {
             let (server, task) = get_server_task(path)?;
-            // 1. Schedule task on assigned server
-            let old = self.schedule.insert(*task.id(), *server.id());
-            // 2. Check if have been scheduler before
-            if let Some(old) = old {
-                // 2.1 If assigned to a different server than before deschedule from previous
-                // run on a new server
-                if old != *server.id() {
-                   self.schedule_task(&old, task.clone(), State::Remove).await;
-                   debug!("Moving task '{}' from server '{}' to server '{}'", task.name(), old, server.hostname());
-                   self.schedule_task(server.id(), task.clone(), State::Run).await;
-                }
-            } else {
-                // 2.2 If haven't scheduler before schedule
-                debug!("Scheduling task '{}' on server '{}'", task.name(), server.hostname());
-                self.schedule_task(server.id(), task.clone(), State::Run).await;
-            }
+            // 2. Assign task to a server
+            self.schedule.insert(*task.id(), *server.id());
+            normalized_tasks.insert(task.id().clone(), task);
+        }
+        // 3. Get tasks that didn't run before or have been moved to different server
+        let mut to_schedule = self.schedule.clone();
+        to_schedule.retain(|k,v| !(old.get(k).is_some() && old[k] == *v));
+
+        for (task_id, server_id) in to_schedule {
+            let task = self.tasks[&task_id].clone();
+            debug!("Scheduling task '{}' on server '{}'", task.name(), server_id);
+            self.schedule_task(&server_id, task, State::Run).await;
+        }
+
+        // 4. Get descheduled tasks or previous task allocation that has been moved
+        let mut to_deschedule = old.clone();
+        to_deschedule.retain(|k,v| self.schedule.get(k).is_none() || self.schedule[k] != *v);
+
+        for (task_id, server_id) in to_deschedule {
+            let task = self.tasks[&task_id].clone();
+            debug!("Descheduling task '{}' from server '{}'", task.name(), server_id);
+            self.schedule_task(&server_id, task, State::Remove).await;
         }
 
         fn get_server_task(
@@ -140,7 +154,7 @@ impl Scheduler {
         Ok(())
     }
 
-    async fn schedule_task(&mut self, server: &ServerID, task: NormalizedTask, state: super::task::State) {
+    async fn schedule_task(&mut self, server: &ServerID, task: super::Task<super::ResourceProfile>, state: super::task::State) {
         let subscription = self.server_subscriptions.get_mut(server).unwrap();
         let cmd = TaskCommand { task, state };
         subscription.send(cmd).await.unwrap();
@@ -170,12 +184,12 @@ impl Scheduler {
     
         for server in servers.values() {
             // 1. get profile based on benchmark
-            let cost = if let Some(cost) = server.profile().as_ref().map(|x| x.inner_product()) {
+            let cost = if let Some(profile) = server.profile().as_ref().map(|x| x.inner_product()) {
                  // 2.1 Get server usage, if server unused (not found) 0
                 let server_usage = server_usage.get(server.id()).map(|x: &Decimal| x.clone()).unwrap_or_else(|| Default::default());
                 // 2.2 (MAX - profile + usage)
-                trace!("Server cost: {}: ({} - {} + {}) ", server.hostname(), NormalizedResourceProfile::MAX.inner_product(), cost, server_usage);
-                (NormalizedResourceProfile::MAX.inner_product() - cost + server_usage).scaled_i64()
+                trace!("Server cost: {}: ({} - {} + {}) ", server.hostname(), NormalizedResourceProfile::MAX.inner_product(), profile, server_usage);
+                (NormalizedResourceProfile::MAX.inner_product() - profile + server_usage).scaled_i64()
             } else {
                 i64::MAX
             };
@@ -192,6 +206,9 @@ impl Scheduler {
         }
     
         for task in tasks.values() {
+            if !task.schedulable() {
+                continue;
+            }
             let cost = if let Some(request) = task.request() { request.inner_product() } else { Decimal::new(0,0) };
     
             let task_node = graph.add_node(Node::Task(task.clone()));

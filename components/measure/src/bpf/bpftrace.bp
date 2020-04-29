@@ -38,7 +38,7 @@ kprobe:tcp_cleanup_rbuf /arg1 > 0 && (${PID})/
   @res_sum["tcp_recv_bytes"] = sum(arg1);
 }
 
-interval:s:5
+interval:s:10
 {
   exit();
 }

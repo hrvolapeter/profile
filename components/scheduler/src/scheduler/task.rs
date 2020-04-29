@@ -1,4 +1,3 @@
-use super::NormalizedTask;
 use crate::import::*;
 use cost_flow::Graphable;
 use getset::{Getters, Setters};
@@ -82,7 +81,7 @@ impl Task<super::ResourceProfile> {
         self.profiles
             .values()
             .flatten()
-            .fold(Default::default(), |acc, x| acc + x.clone())
+            .fold(Default::default(), |acc, x| (acc + x.clone()) / super::ResourceProfile::two())
     }
 }
 
@@ -92,7 +91,7 @@ impl Task<super::NormalizedResourceProfile> {
             .get(server_id)
             .unwrap_or(&vec![])
             .iter()
-            .fold(Default::default(), |acc, x| acc + x.clone())
+            .fold(Default::default(), |acc, x| (acc + x.clone()) /  Decimal::new(2,0))
     }
 }
 
@@ -110,6 +109,6 @@ pub enum State {
 
 #[derive(Eq, PartialEq, Clone, Hash, Debug, Serialize)]
 pub struct TaskCommand {
-    pub task: NormalizedTask,
+    pub task: Task<super::ResourceProfile>,
     pub state: State,
 }

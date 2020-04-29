@@ -120,8 +120,12 @@ impl Scheduler for SchedulerService {
         &self,
         request: Request<proto::FinishTaskRequest>
     ) -> Result<Response<proto::FinishTaskReply>, Status> {
+        let request = request.into_inner();
+
         let mut sched = self.scheduler.lock().await;
-        
+        sched.get_task(&Uuid::from_str(&request.task_id).unwrap()).unwrap().set_schedulable(false);
+        sched.schedule().await;
+        Ok(Response::new(proto::FinishTaskReply {}))
     }
 }
 
@@ -136,8 +140,8 @@ impl Into<scheduler::ResourceProfile> for proto::Profile {
     }
 }
 
-impl From<scheduler::NormalizedTask> for proto::subscribe_tasks_reply::Task {
-    fn from(task: scheduler::NormalizedTask) -> Self {
+impl From<scheduler::Task<scheduler::ResourceProfile>> for proto::subscribe_tasks_reply::Task {
+    fn from(task: scheduler::Task<scheduler::ResourceProfile>) -> Self {
         Self {
             id: task.id().to_string(),
             image: task.image().clone(),
