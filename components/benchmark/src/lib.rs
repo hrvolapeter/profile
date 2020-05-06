@@ -15,14 +15,14 @@ fn workload() -> BoxResult<()> {
     cpu::run()?;
     memory::run(1)?;
     let paths = vec![
-        "/mnt/nvme/bench.1",
-        "/mnt/nvme/bench.2",
-        "/mnt/nvme/bench.3",
-        "/mnt/nvme/bench.4",
-        "/mnt/nvme/bench.5",
-        "/mnt/nvme/bench.6",
+        "/tmp/bench.1",
+        "/tmp/bench.2",
+        "/tmp/bench.3",
+        "/tmp/bench.4",
+        "/tmp/bench.5",
+        "/tmp/bench.6",
     ];
-    disk::run(paths, 2)?;
+    disk::run(paths, 1)?;
     network::run();
     Ok(())
 }

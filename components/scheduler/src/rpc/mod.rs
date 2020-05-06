@@ -118,7 +118,7 @@ impl Scheduler for SchedulerService {
 
     async fn finish_task(
         &self,
-        request: Request<proto::FinishTaskRequest>
+        request: Request<proto::FinishTaskRequest>,
     ) -> Result<Response<proto::FinishTaskReply>, Status> {
         let request = request.into_inner();
 
@@ -132,7 +132,9 @@ impl Scheduler for SchedulerService {
 impl Into<scheduler::ResourceProfile> for proto::Profile {
     fn into(self) -> scheduler::ResourceProfile {
         scheduler::ResourceProfile {
-            ipc: Decimal::new(self.instructions.try_into().unwrap(), 0).checked_div(Decimal::new(self.cycles.try_into().unwrap(), 0)).unwrap_or_else(|| Decimal::new(0,0)),
+            ipc: Decimal::new(self.instructions.try_into().unwrap(), 0)
+                .checked_div(Decimal::new(self.cycles.try_into().unwrap(), 0))
+                .unwrap_or_else(|| Decimal::new(0, 0)),
             disk: self.vfs_read + self.vfs_write,
             memory: self.memory,
             network: self.tcp_send_bytes + self.tcp_recv_bytes,

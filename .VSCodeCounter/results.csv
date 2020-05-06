@@ -1,58 +1,58 @@
-"filename", "language", "TOML", "Rust", "Protocol Buffers", "Handlebars", "comment", "blank", "total"
-"/Users/peterhrvola/dev/scheduler/Cargo.toml", "TOML", 12, 0, 0, 0, 0, 1, 13
-"/Users/peterhrvola/dev/scheduler/components/benchmark/Cargo.toml", "TOML", 14, 0, 0, 0, 1, 2, 17
-"/Users/peterhrvola/dev/scheduler/components/benchmark/src/lib.rs", "Rust", 0, 25, 0, 0, 0, 4, 29
-"/Users/peterhrvola/dev/scheduler/components/benchmark/src/main.rs", "Rust", 0, 5, 0, 0, 0, 1, 6
-"/Users/peterhrvola/dev/scheduler/components/cost_flow/Cargo.toml", "TOML", 8, 0, 0, 0, 1, 3, 12
-"/Users/peterhrvola/dev/scheduler/components/cost_flow/src/bfs.rs", "Rust", 0, 62, 0, 0, 3, 13, 78
-"/Users/peterhrvola/dev/scheduler/components/cost_flow/src/ford_fulkerson.rs", "Rust", 0, 47, 0, 0, 3, 9, 59
-"/Users/peterhrvola/dev/scheduler/components/cost_flow/src/lib.rs", "Rust", 0, 396, 0, 0, 4, 63, 463
-"/Users/peterhrvola/dev/scheduler/components/cost_flow/src/minimum_cost_flow.rs", "Rust", 0, 157, 0, 0, 0, 26, 183
-"/Users/peterhrvola/dev/scheduler/components/cpu/Cargo.toml", "TOML", 8, 0, 0, 0, 1, 3, 12
-"/Users/peterhrvola/dev/scheduler/components/cpu/src/lib.rs", "Rust", 0, 20, 0, 0, 0, 4, 24
-"/Users/peterhrvola/dev/scheduler/components/cpu/src/main.rs", "Rust", 0, 5, 0, 0, 0, 2, 7
-"/Users/peterhrvola/dev/scheduler/components/disk/Cargo.toml", "TOML", 9, 0, 0, 0, 1, 3, 13
-"/Users/peterhrvola/dev/scheduler/components/disk/src/lib.rs", "Rust", 0, 65, 0, 0, 0, 9, 74
-"/Users/peterhrvola/dev/scheduler/components/disk/src/main.rs", "Rust", 0, 19, 0, 0, 0, 5, 24
-"/Users/peterhrvola/dev/scheduler/components/from_hashmap/Cargo.toml", "TOML", 10, 0, 0, 0, 0, 2, 12
-"/Users/peterhrvola/dev/scheduler/components/from_hashmap/src/lib.rs", "Rust", 0, 53, 0, 0, 10, 12, 75
-"/Users/peterhrvola/dev/scheduler/components/measure/Cargo.toml", "TOML", 22, 0, 0, 0, 1, 3, 26
-"/Users/peterhrvola/dev/scheduler/components/measure/src/application_profile.rs", "Rust", 0, 53, 0, 0, 1, 5, 59
-"/Users/peterhrvola/dev/scheduler/components/measure/src/bpf/mod.rs", "Rust", 0, 46, 0, 0, 0, 9, 55
-"/Users/peterhrvola/dev/scheduler/components/measure/src/bpf/profile.rs", "Rust", 0, 94, 0, 0, 0, 11, 105
-"/Users/peterhrvola/dev/scheduler/components/measure/src/lib.rs", "Rust", 0, 97, 0, 0, 1, 12, 110
-"/Users/peterhrvola/dev/scheduler/components/measure/src/main.rs", "Rust", 0, 37, 0, 0, 0, 7, 44
-"/Users/peterhrvola/dev/scheduler/components/measure/src/perf/mod.rs", "Rust", 0, 48, 0, 0, 0, 9, 57
-"/Users/peterhrvola/dev/scheduler/components/measure/src/perf/profile.rs", "Rust", 0, 53, 0, 0, 0, 7, 60
-"/Users/peterhrvola/dev/scheduler/components/measure/src/pmap/mod.rs", "Rust", 0, 49, 0, 0, 0, 9, 58
-"/Users/peterhrvola/dev/scheduler/components/memory/Cargo.toml", "TOML", 10, 0, 0, 0, 1, 3, 14
-"/Users/peterhrvola/dev/scheduler/components/memory/src/lib.rs", "Rust", 0, 40, 0, 0, 3, 8, 51
-"/Users/peterhrvola/dev/scheduler/components/memory/src/main.rs", "Rust", 0, 10, 0, 0, 0, 3, 13
-"/Users/peterhrvola/dev/scheduler/components/network/Cargo.toml", "TOML", 7, 0, 0, 0, 1, 3, 11
-"/Users/peterhrvola/dev/scheduler/components/network/src/lib.rs", "Rust", 0, 16, 0, 0, 0, 3, 19
-"/Users/peterhrvola/dev/scheduler/components/network/src/main.rs", "Rust", 0, 4, 0, 0, 0, 2, 6
-"/Users/peterhrvola/dev/scheduler/components/scheduler/Cargo.toml", "TOML", 27, 0, 0, 0, 1, 3, 31
-"/Users/peterhrvola/dev/scheduler/components/scheduler/build.rs", "Rust", 0, 5, 0, 0, 0, 1, 6
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/main.rs", "Rust", 0, 55, 0, 0, 0, 10, 65
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/rpc/mod.rs", "Rust", 0, 128, 0, 0, 0, 20, 148
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/mod.rs", "Rust", 0, 31, 0, 0, 0, 4, 35
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/resource_profile.rs", "Rust", 0, 77, 0, 0, 3, 13, 93
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/scheduler.rs", "Rust", 0, 171, 0, 0, 4, 23, 198
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/server.rs", "Rust", 0, 31, 0, 0, 0, 5, 36
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/task.rs", "Rust", 0, 92, 0, 0, 0, 10, 102
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/virtual_resource.rs", "Rust", 0, 17, 0, 0, 0, 4, 21
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/handlers.rs", "Rust", 0, 148, 0, 0, 0, 20, 168
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/mod.rs", "Rust", 0, 68, 0, 0, 0, 11, 79
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/footer.hbs", "Handlebars", 0, 0, 0, 8, 0, 0, 8
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/graph.hbs", "Handlebars", 0, 0, 0, 48, 0, 8, 56
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/header.hbs", "Handlebars", 0, 0, 0, 133, 0, 18, 151
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/index.hbs", "Handlebars", 0, 0, 0, 3, 0, 2, 5
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/server.hbs", "Handlebars", 0, 0, 0, 94, 0, 3, 97
-"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/task.hbs", "Handlebars", 0, 0, 0, 106, 0, 6, 112
-"/Users/peterhrvola/dev/scheduler/components/scheduler_agent/Cargo.toml", "TOML", 19, 0, 0, 0, 1, 4, 24
-"/Users/peterhrvola/dev/scheduler/components/scheduler_agent/build.rs", "Rust", 0, 5, 0, 0, 0, 1, 6
-"/Users/peterhrvola/dev/scheduler/components/scheduler_agent/src/main.rs", "Rust", 0, 94, 0, 0, 0, 13, 107
-"/Users/peterhrvola/dev/scheduler/components/scheduler_agent/src/task.rs", "Rust", 0, 95, 0, 0, 0, 9, 104
-"/Users/peterhrvola/dev/scheduler/components/scheduler_proto/scheduler.proto", "Protocol Buffers", 0, 0, 64, 0, 0, 11, 75
-"/Users/peterhrvola/dev/scheduler/rustfmt.toml", "TOML", 5, 0, 0, 0, 1, 1, 7
-"Total", "-", 151, 2418, 64, 392, 42, 456, 3523
+"filename", "language", "TOML", "Dockerfile", "Rust", "Ignore", "Protocol Buffers", "Handlebars", "comment", "blank", "total"
+"/Users/peterhrvola/dev/scheduler/.dockerignore", "Ignore", 0, 0, 0, 1, 0, 0, 0, 0, 1
+"/Users/peterhrvola/dev/scheduler/Cargo.toml", "TOML", 12, 0, 0, 0, 0, 0, 0, 1, 13
+"/Users/peterhrvola/dev/scheduler/Dockerfile", "Dockerfile", 0, 10, 0, 0, 0, 0, 0, 3, 13
+"/Users/peterhrvola/dev/scheduler/components/benchmark/Cargo.toml", "TOML", 14, 0, 0, 0, 0, 0, 1, 2, 17
+"/Users/peterhrvola/dev/scheduler/components/benchmark/src/lib.rs", "Rust", 0, 0, 25, 0, 0, 0, 0, 4, 29
+"/Users/peterhrvola/dev/scheduler/components/benchmark/src/main.rs", "Rust", 0, 0, 5, 0, 0, 0, 0, 1, 6
+"/Users/peterhrvola/dev/scheduler/components/cost_flow/Cargo.toml", "TOML", 8, 0, 0, 0, 0, 0, 1, 3, 12
+"/Users/peterhrvola/dev/scheduler/components/cost_flow/src/bfs.rs", "Rust", 0, 0, 62, 0, 0, 0, 3, 13, 78
+"/Users/peterhrvola/dev/scheduler/components/cost_flow/src/ford_fulkerson.rs", "Rust", 0, 0, 47, 0, 0, 0, 3, 9, 59
+"/Users/peterhrvola/dev/scheduler/components/cost_flow/src/lib.rs", "Rust", 0, 0, 408, 0, 0, 0, 4, 63, 475
+"/Users/peterhrvola/dev/scheduler/components/cost_flow/src/minimum_cost_flow.rs", "Rust", 0, 0, 157, 0, 0, 0, 0, 26, 183
+"/Users/peterhrvola/dev/scheduler/components/cpu/Cargo.toml", "TOML", 8, 0, 0, 0, 0, 0, 1, 3, 12
+"/Users/peterhrvola/dev/scheduler/components/cpu/src/lib.rs", "Rust", 0, 0, 20, 0, 0, 0, 0, 4, 24
+"/Users/peterhrvola/dev/scheduler/components/cpu/src/main.rs", "Rust", 0, 0, 5, 0, 0, 0, 0, 2, 7
+"/Users/peterhrvola/dev/scheduler/components/disk/Cargo.toml", "TOML", 9, 0, 0, 0, 0, 0, 1, 3, 13
+"/Users/peterhrvola/dev/scheduler/components/disk/src/lib.rs", "Rust", 0, 0, 68, 0, 0, 0, 0, 12, 80
+"/Users/peterhrvola/dev/scheduler/components/disk/src/main.rs", "Rust", 0, 0, 19, 0, 0, 0, 0, 5, 24
+"/Users/peterhrvola/dev/scheduler/components/measure/Cargo.toml", "TOML", 21, 0, 0, 0, 0, 0, 1, 3, 25
+"/Users/peterhrvola/dev/scheduler/components/measure/src/application_profile.rs", "Rust", 0, 0, 53, 0, 0, 0, 1, 5, 59
+"/Users/peterhrvola/dev/scheduler/components/measure/src/bpf/mod.rs", "Rust", 0, 0, 46, 0, 0, 0, 0, 9, 55
+"/Users/peterhrvola/dev/scheduler/components/measure/src/bpf/profile.rs", "Rust", 0, 0, 94, 0, 0, 0, 0, 11, 105
+"/Users/peterhrvola/dev/scheduler/components/measure/src/lib.rs", "Rust", 0, 0, 76, 0, 0, 0, 1, 10, 87
+"/Users/peterhrvola/dev/scheduler/components/measure/src/main.rs", "Rust", 0, 0, 57, 0, 0, 0, 0, 9, 66
+"/Users/peterhrvola/dev/scheduler/components/measure/src/perf/mod.rs", "Rust", 0, 0, 48, 0, 0, 0, 0, 9, 57
+"/Users/peterhrvola/dev/scheduler/components/measure/src/perf/profile.rs", "Rust", 0, 0, 51, 0, 0, 0, 0, 5, 56
+"/Users/peterhrvola/dev/scheduler/components/measure/src/pmap/mod.rs", "Rust", 0, 0, 49, 0, 0, 0, 0, 9, 58
+"/Users/peterhrvola/dev/scheduler/components/memory/Cargo.toml", "TOML", 10, 0, 0, 0, 0, 0, 1, 3, 14
+"/Users/peterhrvola/dev/scheduler/components/memory/src/lib.rs", "Rust", 0, 0, 40, 0, 0, 0, 3, 8, 51
+"/Users/peterhrvola/dev/scheduler/components/memory/src/main.rs", "Rust", 0, 0, 10, 0, 0, 0, 0, 3, 13
+"/Users/peterhrvola/dev/scheduler/components/network/Cargo.toml", "TOML", 7, 0, 0, 0, 0, 0, 1, 3, 11
+"/Users/peterhrvola/dev/scheduler/components/network/src/lib.rs", "Rust", 0, 0, 16, 0, 0, 0, 0, 3, 19
+"/Users/peterhrvola/dev/scheduler/components/network/src/main.rs", "Rust", 0, 0, 4, 0, 0, 0, 0, 2, 6
+"/Users/peterhrvola/dev/scheduler/components/scheduler/Cargo.toml", "TOML", 28, 0, 0, 0, 0, 0, 1, 3, 32
+"/Users/peterhrvola/dev/scheduler/components/scheduler/build.rs", "Rust", 0, 0, 5, 0, 0, 0, 0, 1, 6
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/main.rs", "Rust", 0, 0, 65, 0, 0, 0, 0, 10, 75
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/rpc/mod.rs", "Rust", 0, 0, 142, 0, 0, 0, 0, 22, 164
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/mod.rs", "Rust", 0, 0, 32, 0, 0, 0, 0, 4, 36
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/resource_profile.rs", "Rust", 0, 0, 107, 0, 0, 0, 3, 19, 129
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/scheduler.rs", "Rust", 0, 0, 218, 0, 0, 0, 35, 35, 288
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/server.rs", "Rust", 0, 0, 31, 0, 0, 0, 0, 5, 36
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/task.rs", "Rust", 0, 0, 120, 0, 0, 0, 1, 13, 134
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/virtual_resource.rs", "Rust", 0, 0, 17, 0, 0, 0, 0, 4, 21
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/handlers.rs", "Rust", 0, 0, 164, 0, 0, 0, 0, 20, 184
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/mod.rs", "Rust", 0, 0, 68, 0, 0, 0, 0, 11, 79
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/footer.hbs", "Handlebars", 0, 0, 0, 0, 0, 8, 0, 0, 8
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/graph.hbs", "Handlebars", 0, 0, 0, 0, 0, 48, 0, 8, 56
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/header.hbs", "Handlebars", 0, 0, 0, 0, 0, 133, 0, 18, 151
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/index.hbs", "Handlebars", 0, 0, 0, 0, 0, 3, 0, 2, 5
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/server.hbs", "Handlebars", 0, 0, 0, 0, 0, 94, 0, 3, 97
+"/Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/task.hbs", "Handlebars", 0, 0, 0, 0, 0, 104, 0, 6, 110
+"/Users/peterhrvola/dev/scheduler/components/scheduler_agent/Cargo.toml", "TOML", 22, 0, 0, 0, 0, 0, 1, 4, 27
+"/Users/peterhrvola/dev/scheduler/components/scheduler_agent/build.rs", "Rust", 0, 0, 5, 0, 0, 0, 0, 1, 6
+"/Users/peterhrvola/dev/scheduler/components/scheduler_agent/src/main.rs", "Rust", 0, 0, 114, 0, 0, 0, 0, 14, 128
+"/Users/peterhrvola/dev/scheduler/components/scheduler_agent/src/task.rs", "Rust", 0, 0, 118, 0, 0, 0, 0, 10, 128
+"/Users/peterhrvola/dev/scheduler/components/scheduler_proto/scheduler.proto", "Protocol Buffers", 0, 0, 0, 0, 71, 0, 0, 13, 84
+"/Users/peterhrvola/dev/scheduler/rustfmt.toml", "TOML", 5, 0, 0, 0, 0, 0, 1, 1, 7
+"Total", "-", 144, 10, 2566, 1, 71, 390, 64, 473, 3719

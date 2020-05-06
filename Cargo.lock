@@ -2089,6 +2089,7 @@ dependencies = [
  "handlebars",
  "lazy_static 1.4.0",
  "log 0.4.8",
+ "num-traits",
  "openssl",
  "prost",
  "rust_decimal",
@@ -2117,6 +2118,7 @@ dependencies = [
  "measure",
  "openssl",
  "prost",
+ "sys-info",
  "tokio",
  "tonic",
  "tonic-build",
@@ -2302,6 +2304,16 @@ dependencies = [
  "quote",
  "syn",
  "unicode-xid",
+]
+
+[[package]]
+name = "sys-info"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb0fb3fecc8cf6ffd2b75b19f0b1e56770fc8d370fed8bb82ce90e29014951c3"
+dependencies = [
+ "cc",
+ "libc",
 ]
 
 [[package]]

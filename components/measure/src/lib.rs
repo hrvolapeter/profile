@@ -12,8 +12,8 @@ use crate::bpf::Bpf;
 use crate::perf::Perf;
 use crate::pmap::Pmap;
 use futures::executor::block_on;
-use std::error::Error;
 use log::debug;
+use std::error::Error;
 use std::thread;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::Receiver;
@@ -63,8 +63,7 @@ pub async fn run(
     let bpf = Bpf::new(&pids[..], bpf_receiver)?.lop();
     let pmap = Pmap::new(&pids[..], pmap_receiver)?.lop();
     let perf = Perf::new(&pids[..], perf_receiver).run();
-    let senders: Vec<_> =
-        [bpf_sender, perf_sender, pmap_sender, ctrlc_sender].to_vec();
+    let senders: Vec<_> = [bpf_sender, perf_sender, pmap_sender, ctrlc_sender].to_vec();
 
     if let Some(mut cancel_channel) = cancel_channel {
         tokio::spawn(async move {

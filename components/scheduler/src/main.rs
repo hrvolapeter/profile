@@ -1,6 +1,5 @@
 #![deny(warnings)]
-#![feature(async_closure)]
-#![feature(try_trait)]
+#![feature(const_fn, try_trait, async_closure)]
 #![deny(clippy::all, clippy::pedantic)]
 #![allow(
     clippy::default_trait_access,

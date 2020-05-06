@@ -7,6 +7,8 @@ use std::io::BufWriter;
 use std::io::Read;
 use std::io::Write;
 use std::thread;
+use std::fs;
+
 pub type BoxResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
 pub fn run(paths: Vec<&str>, size: u32) -> BoxResult<()> {
@@ -35,6 +37,11 @@ pub fn run(paths: Vec<&str>, size: u32) -> BoxResult<()> {
         let res = h.join().unwrap();
         eprintln!("{:?}", res);
     }
+
+    for path in paths {
+        fs::remove_file(path)?;
+    }
+
     Ok(())
 }
 

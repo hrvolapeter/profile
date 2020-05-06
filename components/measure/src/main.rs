@@ -1,13 +1,13 @@
 #![deny(warnings)]
 
 use clap::{App, Arg};
+use fern::colors::ColoredLevelConfig;
 use futures::executor::block_on;
 use log::debug;
 use measure::ApplicationProfile;
 use std::error::Error;
 use std::process::Command;
 use tokio::sync::mpsc;
-use fern::colors::ColoredLevelConfig;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {

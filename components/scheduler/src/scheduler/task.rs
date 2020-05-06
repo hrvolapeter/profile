@@ -46,7 +46,7 @@ impl<T> Task<T> {
     }
 }
 
-impl <T> PartialEq for Task<T> {
+impl<T> PartialEq for Task<T> {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
     }
@@ -92,12 +92,25 @@ impl Task<super::ResourceProfile> {
 }
 
 impl Task<super::NormalizedResourceProfile> {
-    pub fn avg_profile(&self, server_id: &Uuid) -> super::NormalizedResourceProfile {
-        self.profiles
-            .get(server_id)
-            .unwrap_or(&vec![])
-            .iter()
-            .fold(Default::default(), |acc, x| (acc + x.clone()) /  Decimal::new(2,0))
+    pub fn profile(&self, server_id: &Uuid) -> Option<super::NormalizedResourceProfile> {
+        use num_traits::cast::FromPrimitive;
+
+        let length = self.profiles.get(server_id).map_or(0, Vec::len);
+        if let Some(profile) = self.profiles.get(server_id) {
+            let sum = profile.iter().enumerate().fold(
+                super::NormalizedResourceProfile::default(),
+                |acc, (i, x)| {
+                    #[allow(clippy::cast_precision_loss)]
+                    let i = i as f64;
+                    #[allow(clippy::cast_precision_loss)]
+                    let length = length as f64;
+                    acc + (x.clone() * Decimal::from_f64(1_f64 + i / length).unwrap())
+                },
+            );
+            Some(sum / Decimal::new(length.try_into().unwrap(), 0))
+        } else {
+            None
+        }
     }
 }
 

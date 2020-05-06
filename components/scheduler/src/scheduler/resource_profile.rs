@@ -1,9 +1,9 @@
 use crate::prelude::*;
-use derive_more::{Add, AddAssign, Sub, SubAssign, Div};
+use derive_more::{Add, AddAssign, Div, Mul, MulAssign, Sub, SubAssign};
 use std::cmp::Ordering;
 
 #[derive(
-    Default, Copy, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign
+    Default, Copy, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign,
 )]
 pub struct ResourceProfile {
     pub ipc: Decimal,
@@ -13,10 +13,11 @@ pub struct ResourceProfile {
 }
 
 impl ResourceProfile {
-    pub const ONE: ResourceProfile = 
-        Self { ipc: one(), memory: 1, network: 1, disk: 1 };
+    pub const ONE: ResourceProfile = Self { ipc: one(), memory: 1, network: 1, disk: 1 };
 
-    pub fn two() -> ResourceProfile { Self::ONE + Self::ONE }
+    pub fn two() -> ResourceProfile {
+        Self::ONE + Self::ONE
+    }
 
     pub fn normalize(&self, other: &ResourceProfile) -> NormalizedResourceProfile {
         NormalizedResourceProfile {
@@ -40,7 +41,22 @@ impl std::ops::Div for ResourceProfile {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Hash, Eq, Debug, Serialize, Add, AddAssign, Sub, SubAssign, Div)]
+#[derive(
+    Default,
+    Clone,
+    PartialEq,
+    Hash,
+    Eq,
+    Debug,
+    Serialize,
+    Add,
+    Sub,
+    AddAssign,
+    SubAssign,
+    Div,
+    Mul,
+    MulAssign,
+)]
 pub struct NormalizedResourceProfile {
     ipc: Decimal,
     memory: Decimal,
@@ -52,12 +68,20 @@ const fn one() -> Decimal {
     Decimal::from_parts(1, 0, 0, false, 0)
 }
 
+const fn two() -> Decimal {
+    Decimal::from_parts(2, 0, 0, false, 0)
+}
+
 impl NormalizedResourceProfile {
     pub const MAX: NormalizedResourceProfile =
         NormalizedResourceProfile { ipc: one(), disk: one(), memory: one(), network: one() };
 
     pub fn inner_product(&self) -> Decimal {
-        self.ipc + self.memory + self.network + self.disk
+        self.ipc  * two() + self.memory * two() + self.network + self.disk
+    }
+
+    pub fn has_negative_resource(&self) -> bool {
+        self.ipc.is_sign_negative() || self.memory.is_sign_negative() || self.network.is_sign_negative() || self.disk.is_sign_negative()
     }
 }
 

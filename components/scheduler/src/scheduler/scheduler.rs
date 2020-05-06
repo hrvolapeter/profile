@@ -83,7 +83,7 @@ impl Scheduler {
     /// 3. assign tasks to server based on schedule (agent are notified of the change)
     pub async fn schedule(&mut self) {
         use cost_flow::MinimumCostFlow;
-        let (servers, tasks) = self.normalized();
+        let (servers, tasks) = self.normalize();
         let mut graph = self.build_flow_graph(&servers, &tasks);
         graph.minimum_cost_flow();
         let paths = graph.paths();
@@ -93,7 +93,7 @@ impl Scheduler {
 
     /// Finds maximum profile for all servers and uses the most performant server as a maximum value
     /// Each resource is normalized to value between (0, 1), the max profile beeing all 1
-    fn normalized(&self) -> (HashMap<ServerID, NormalizedServer>, HashMap<TaskID, NormalizedTask>) {
+    fn normalize(&self) -> (HashMap<ServerID, NormalizedServer>, HashMap<TaskID, NormalizedTask>) {
         use std::cmp::max;
 
         debug!("Normalizing profiles");
@@ -103,7 +103,7 @@ impl Scheduler {
             .servers
             .values()
             .map(|x| x.profile().unwrap_or_else(|| ResourceProfile::ONE))
-            .fold(ResourceProfile::ONE, |acc, x| ResourceProfile {
+            .fold(ResourceProfile::default(), |acc, x| ResourceProfile {
                 ipc: max(acc.ipc, x.ipc),
                 disk: max(acc.disk, x.disk),
                 network: max(acc.network, x.network),
@@ -151,7 +151,7 @@ impl Scheduler {
 
         for (task_id, server_id) in to_schedule {
             let task = self.tasks[&task_id].clone();
-            debug!("Scheduling task '{}' on server '{}'", task.name(), server_id);
+            debug!("Scheduling task '{}' on server '{}'", task.name(), self.servers[&server_id].hostname());
             self.schedule_task(&server_id, task, State::Run).await;
         }
 
@@ -188,29 +188,32 @@ impl Scheduler {
         let cluster =
             graph.add_node(Node::VirtualResource(VirtualResource::new("Cluster".to_string())));
         let task_count = tasks.len();
-        let mut servers_node = HashMap::new();
     
         // 1. Get current server utilization
         let mut server_usage = HashMap::new();
         for (key, value) in &self.schedule {
-            let val = server_usage.entry(value).or_insert_with(Default::default);
-            *val += tasks[key].avg_profile(value).inner_product();
+            let val = server_usage.entry(*value).or_insert_with(Default::default);
+            *val += tasks[key].profile(value).unwrap_or(NormalizedResourceProfile::default());
         }
+
+        let mut server_to_node = HashMap::new();
     
         // 2. Add servers to flow graph
         for server in servers.values() {
+            let node = graph.add_node(Node::Server(server.clone()));
+
             // 2.1. get profile based on benchmark
-            let cost = if let Some(profile) = server.profile().as_ref().map(NormalizedResourceProfile::inner_product) {
+            let cost = if let Some(profile) = server.profile().as_ref() {
                  // 2.2 Get server usage, if server unused (not found) 0
-                let server_usage = server_usage.get(server.id()).map_or_else(Default::default, |x: &Decimal| *x);
+                let server_usage = server_usage.get(server.id()).map_or_else(Default::default, |x: &NormalizedResourceProfile| x.clone());
                 // 2.3 (MAX - profile + usage)
-                trace!("Server cost: {}: ({} - {} + {}) ", server.hostname(), NormalizedResourceProfile::MAX.inner_product(), profile, server_usage);
-                (NormalizedResourceProfile::MAX.inner_product() - profile + server_usage).scaled_i64()
+                trace!("Server cost: {}: ({} - {:?} (cost {}) + {:?}(cost {})) ", server.hostname(), NormalizedResourceProfile::MAX.inner_product(), profile, profile.inner_product(), server_usage, server_usage.inner_product());
+                server_to_node.insert(server.id(), (profile.clone() - server_usage.clone(), node));
+                (NormalizedResourceProfile::MAX.inner_product() - profile.inner_product() + server_usage.inner_product()).scaled_i64()
             } else {
                 i64::MAX
             };
-            let node = graph.add_node(Node::Server(server.clone()));
-            servers_node.insert(server.id().clone(), node);
+            trace!("Cost result {}", cost);
             graph.add_edge(
                 cluster,
                 node,
@@ -222,19 +225,42 @@ impl Scheduler {
     
         // 3. Add tasks to flow graph
         for task in tasks.values() {
-            // 3.1 Task is finished running
+            // 3.1 Continue if task is finished running
             if !task.schedulable() {
                 continue;
             }
-            let cost = task.request().clone().map_or_else(|| Decimal::new(0,0), |x| x.inner_product());
-    
-            // 3.2 Connect task with cluster node
+            let cost = if let Some(server_id) = task.profiles().keys().next() {
+                // TODO: server can produce different profiles for the same task/job
+                // even though resource distribution is simillar this can result if having different
+                // cost when scheduling task
+                task.profile(server_id).map_or(0, |x| x.inner_product().to_i64().unwrap())
+            } else {
+                0
+            };
+
+            // 3.2 Create task and connect to source
             let task_node = graph.add_node(Node::Task(task.clone()));
             graph.add_edge(graph.source, task_node, Capacity(1), Cost(0));
-            graph.add_edge(task_node, cluster, Capacity(1), Cost(cost.to_i64().unwrap()));
-            if let Some(id) = self.schedule.get(task.id()) {
-                graph.add_edge(task_node, servers_node[id], Capacity(1), Cost(0));
+    
+            // 3.2 Connect task with servers
+            if let Some(request) = task.request() {
+                 // 3.2.1 Connect task with servers that meet requirements
+                 for server in servers.values() {
+                    let (free_resources, server_node) = &server_to_node[server.id()];
+                    let diff = free_resources.clone() - request.clone();
+                    if diff.has_negative_resource() {
+                        continue;
+                    }
+                    graph.add_edge(task_node, *server_node, Capacity(1), Cost(cost));
+                }
+            } else {
+                 // 3.2.2 Connect task with cluster node if no minimal requirements
+                 graph.add_edge(task_node, cluster, Capacity(1), Cost(cost.to_i64().unwrap()));
+                 if let Some(id) = self.schedule.get(task.id()) {
+                     graph.add_edge(task_node, server_to_node[id].1, Capacity(1), Cost(0));
+                 }
             }
+            
     
             // 3.3 Allow tasks to remain unscheduled
             let unscheduled =
@@ -259,6 +285,5 @@ trait DecimalConvert {
 impl DecimalConvert for Decimal {
     fn scaled_i64(&self) -> i64 {
         (self * Decimal::new(100, 0)).to_i64().unwrap()
-
     }
 }

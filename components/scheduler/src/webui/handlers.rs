@@ -132,16 +132,22 @@ pub async fn get_task(scheduler: Scheduler) -> Result<impl warp::Reply, warp::re
     let source_template = include_str!("./pages/task.hbs");
     let scheduler = scheduler.lock().await;
     let mut map = HashMap::<&'static str, _>::new();
-    let tasks: Vec<HashMap<_,_>> = scheduler.get_tasks().iter().map(|x| {
-        vec![
-            ("name", x.name().clone()),
-            ("realtime", format!("{}", x.realtime())),
-            ("image", x.image().clone()),
-            ("schedulable", format!("{}", x.schedulable())),
-            ("request", format!("{:#?}", x.request())),
-            ("profile", format!("{:#?}", x.debug_profile()))
-        ].into_iter().collect()
-    }).collect();
+    let tasks: Vec<HashMap<_, _>> = scheduler
+        .get_tasks()
+        .iter()
+        .map(|x| {
+            vec![
+                ("name", x.name().clone()),
+                ("realtime", format!("{}", x.realtime())),
+                ("image", x.image().clone()),
+                ("schedulable", format!("{}", x.schedulable())),
+                ("request", format!("{:#?}", x.request())),
+                ("profile", format!("{:#?}", x.debug_profile())),
+            ]
+            .into_iter()
+            .collect()
+        })
+        .collect();
     map.insert("tasks", tasks);
 
     let res = HBS.render_template(&source_template[..], &map).unwrap();

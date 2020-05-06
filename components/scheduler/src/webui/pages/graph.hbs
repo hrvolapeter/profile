@@ -10,6 +10,7 @@
   };
 
   socket.onmessage = function (event) {
+    window.data = event.data
     plotNetwork(event.data)
   };
 

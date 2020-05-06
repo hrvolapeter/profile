@@ -1,82 +1,82 @@
-Date : 2020-04-21 09:55:34
+Date : 2020-05-02 11:42:45
 Directory : /Users/peterhrvola/dev/scheduler
-Total : 56 files,  3025 codes, 42 comments, 456 blanks, all 3523 lines
+Total : 56 files,  3182 codes, 64 comments, 473 blanks, all 3719 lines
 
 Languages
 +------------------+------------+------------+------------+------------+------------+
 | language         | files      | code       | comment    | blank      | total      |
 +------------------+------------+------------+------------+------------+------------+
-| Rust             |         37 |      2,418 |         32 |        377 |      2,827 |
-| Handlebars       |          6 |        392 |          0 |         37 |        429 |
-| TOML             |         12 |        151 |         10 |         31 |        192 |
-| Protocol Buffers |          1 |         64 |          0 |         11 |         75 |
+| Rust             |         36 |      2,566 |         54 |        391 |      3,011 |
+| Handlebars       |          6 |        390 |          0 |         37 |        427 |
+| TOML             |         11 |        144 |         10 |         29 |        183 |
+| Protocol Buffers |          1 |         71 |          0 |         13 |         84 |
+| Dockerfile       |          1 |         10 |          0 |          3 |         13 |
+| Ignore           |          1 |          1 |          0 |          0 |          1 |
 +------------------+------------+------------+------------+------------+------------+
 
 Directories
 +-----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
 | path                                                                                    | files      | code       | comment    | blank      | total      |
 +-----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
-| .                                                                                       |         56 |      3,025 |         42 |        456 |      3,523 |
-| components                                                                              |         54 |      3,008 |         41 |        454 |      3,503 |
+| .                                                                                       |         56 |      3,182 |         64 |        473 |      3,719 |
+| components                                                                              |         52 |      3,154 |         63 |        468 |      3,685 |
 | components/benchmark                                                                    |          3 |         44 |          1 |          7 |         52 |
 | components/benchmark/src                                                                |          2 |         30 |          0 |          5 |         35 |
-| components/cost_flow                                                                    |          5 |        670 |         11 |        114 |        795 |
-| components/cost_flow/src                                                                |          4 |        662 |         10 |        111 |        783 |
+| components/cost_flow                                                                    |          5 |        682 |         11 |        114 |        807 |
+| components/cost_flow/src                                                                |          4 |        674 |         10 |        111 |        795 |
 | components/cpu                                                                          |          3 |         33 |          1 |          9 |         43 |
 | components/cpu/src                                                                      |          2 |         25 |          0 |          6 |         31 |
-| components/disk                                                                         |          3 |         93 |          1 |         17 |        111 |
-| components/disk/src                                                                     |          2 |         84 |          0 |         14 |         98 |
-| components/from_hashmap                                                                 |          2 |         63 |         10 |         14 |         87 |
-| components/from_hashmap/src                                                             |          1 |         53 |         10 |         12 |         75 |
-| components/measure                                                                      |          9 |        499 |          3 |         72 |        574 |
-| components/measure/src                                                                  |          8 |        477 |          2 |         69 |        548 |
+| components/disk                                                                         |          3 |         96 |          1 |         20 |        117 |
+| components/disk/src                                                                     |          2 |         87 |          0 |         17 |        104 |
+| components/measure                                                                      |          9 |        495 |          3 |         70 |        568 |
+| components/measure/src                                                                  |          8 |        474 |          2 |         67 |        543 |
 | components/measure/src/bpf                                                              |          2 |        140 |          0 |         20 |        160 |
-| components/measure/src/perf                                                             |          2 |        101 |          0 |         16 |        117 |
+| components/measure/src/perf                                                             |          2 |         99 |          0 |         14 |        113 |
 | components/measure/src/pmap                                                             |          1 |         49 |          0 |          9 |         58 |
 | components/memory                                                                       |          3 |         60 |          4 |         14 |         78 |
 | components/memory/src                                                                   |          2 |         50 |          3 |         11 |         64 |
 | components/network                                                                      |          3 |         27 |          1 |          8 |         36 |
 | components/network/src                                                                  |          2 |         20 |          0 |          5 |         25 |
-| components/scheduler                                                                    |         18 |      1,242 |          8 |        161 |      1,411 |
-| components/scheduler/src                                                                |         16 |      1,210 |          7 |        157 |      1,374 |
-| components/scheduler/src/rpc                                                            |          1 |        128 |          0 |         20 |        148 |
-| components/scheduler/src/scheduler                                                      |          6 |        419 |          7 |         59 |        485 |
-| components/scheduler/src/webui                                                          |          8 |        608 |          0 |         68 |        676 |
-| components/scheduler/src/webui/pages                                                    |          6 |        392 |          0 |         37 |        429 |
-| components/scheduler_agent                                                              |          4 |        213 |          1 |         27 |        241 |
-| components/scheduler_agent/src                                                          |          2 |        189 |          0 |         22 |        211 |
-| components/scheduler_proto                                                              |          1 |         64 |          0 |         11 |         75 |
+| components/scheduler                                                                    |         18 |      1,387 |         40 |        184 |      1,611 |
+| components/scheduler/src                                                                |         16 |      1,354 |         39 |        180 |      1,573 |
+| components/scheduler/src/rpc                                                            |          1 |        142 |          0 |         22 |        164 |
+| components/scheduler/src/scheduler                                                      |          6 |        525 |         39 |         80 |        644 |
+| components/scheduler/src/webui                                                          |          8 |        622 |          0 |         68 |        690 |
+| components/scheduler/src/webui/pages                                                    |          6 |        390 |          0 |         37 |        427 |
+| components/scheduler_agent                                                              |          4 |        259 |          1 |         29 |        289 |
+| components/scheduler_agent/src                                                          |          2 |        232 |          0 |         24 |        256 |
+| components/scheduler_proto                                                              |          1 |         71 |          0 |         13 |         84 |
 +-----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
 
 Files
 +-----------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
 | filename                                                                                | language         | code       | comment    | blank      | total      |
 +-----------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| /Users/peterhrvola/dev/scheduler/.dockerignore                                          | Ignore           |          1 |          0 |          0 |          1 |
 | /Users/peterhrvola/dev/scheduler/Cargo.toml                                             | TOML             |         12 |          0 |          1 |         13 |
+| /Users/peterhrvola/dev/scheduler/Dockerfile                                             | Dockerfile       |         10 |          0 |          3 |         13 |
 | /Users/peterhrvola/dev/scheduler/components/benchmark/Cargo.toml                        | TOML             |         14 |          1 |          2 |         17 |
 | /Users/peterhrvola/dev/scheduler/components/benchmark/src/lib.rs                        | Rust             |         25 |          0 |          4 |         29 |
 | /Users/peterhrvola/dev/scheduler/components/benchmark/src/main.rs                       | Rust             |          5 |          0 |          1 |          6 |
 | /Users/peterhrvola/dev/scheduler/components/cost_flow/Cargo.toml                        | TOML             |          8 |          1 |          3 |         12 |
 | /Users/peterhrvola/dev/scheduler/components/cost_flow/src/bfs.rs                        | Rust             |         62 |          3 |         13 |         78 |
 | /Users/peterhrvola/dev/scheduler/components/cost_flow/src/ford_fulkerson.rs             | Rust             |         47 |          3 |          9 |         59 |
-| /Users/peterhrvola/dev/scheduler/components/cost_flow/src/lib.rs                        | Rust             |        396 |          4 |         63 |        463 |
+| /Users/peterhrvola/dev/scheduler/components/cost_flow/src/lib.rs                        | Rust             |        408 |          4 |         63 |        475 |
 | /Users/peterhrvola/dev/scheduler/components/cost_flow/src/minimum_cost_flow.rs          | Rust             |        157 |          0 |         26 |        183 |
 | /Users/peterhrvola/dev/scheduler/components/cpu/Cargo.toml                              | TOML             |          8 |          1 |          3 |         12 |
 | /Users/peterhrvola/dev/scheduler/components/cpu/src/lib.rs                              | Rust             |         20 |          0 |          4 |         24 |
 | /Users/peterhrvola/dev/scheduler/components/cpu/src/main.rs                             | Rust             |          5 |          0 |          2 |          7 |
 | /Users/peterhrvola/dev/scheduler/components/disk/Cargo.toml                             | TOML             |          9 |          1 |          3 |         13 |
-| /Users/peterhrvola/dev/scheduler/components/disk/src/lib.rs                             | Rust             |         65 |          0 |          9 |         74 |
+| /Users/peterhrvola/dev/scheduler/components/disk/src/lib.rs                             | Rust             |         68 |          0 |         12 |         80 |
 | /Users/peterhrvola/dev/scheduler/components/disk/src/main.rs                            | Rust             |         19 |          0 |          5 |         24 |
-| /Users/peterhrvola/dev/scheduler/components/from_hashmap/Cargo.toml                     | TOML             |         10 |          0 |          2 |         12 |
-| /Users/peterhrvola/dev/scheduler/components/from_hashmap/src/lib.rs                     | Rust             |         53 |         10 |         12 |         75 |
-| /Users/peterhrvola/dev/scheduler/components/measure/Cargo.toml                          | TOML             |         22 |          1 |          3 |         26 |
+| /Users/peterhrvola/dev/scheduler/components/measure/Cargo.toml                          | TOML             |         21 |          1 |          3 |         25 |
 | /Users/peterhrvola/dev/scheduler/components/measure/src/application_profile.rs          | Rust             |         53 |          1 |          5 |         59 |
 | /Users/peterhrvola/dev/scheduler/components/measure/src/bpf/mod.rs                      | Rust             |         46 |          0 |          9 |         55 |
 | /Users/peterhrvola/dev/scheduler/components/measure/src/bpf/profile.rs                  | Rust             |         94 |          0 |         11 |        105 |
-| /Users/peterhrvola/dev/scheduler/components/measure/src/lib.rs                          | Rust             |         97 |          1 |         12 |        110 |
-| /Users/peterhrvola/dev/scheduler/components/measure/src/main.rs                         | Rust             |         37 |          0 |          7 |         44 |
+| /Users/peterhrvola/dev/scheduler/components/measure/src/lib.rs                          | Rust             |         76 |          1 |         10 |         87 |
+| /Users/peterhrvola/dev/scheduler/components/measure/src/main.rs                         | Rust             |         57 |          0 |          9 |         66 |
 | /Users/peterhrvola/dev/scheduler/components/measure/src/perf/mod.rs                     | Rust             |         48 |          0 |          9 |         57 |
-| /Users/peterhrvola/dev/scheduler/components/measure/src/perf/profile.rs                 | Rust             |         53 |          0 |          7 |         60 |
+| /Users/peterhrvola/dev/scheduler/components/measure/src/perf/profile.rs                 | Rust             |         51 |          0 |          5 |         56 |
 | /Users/peterhrvola/dev/scheduler/components/measure/src/pmap/mod.rs                     | Rust             |         49 |          0 |          9 |         58 |
 | /Users/peterhrvola/dev/scheduler/components/memory/Cargo.toml                           | TOML             |         10 |          1 |          3 |         14 |
 | /Users/peterhrvola/dev/scheduler/components/memory/src/lib.rs                           | Rust             |         40 |          3 |          8 |         51 |
@@ -84,29 +84,29 @@ Files
 | /Users/peterhrvola/dev/scheduler/components/network/Cargo.toml                          | TOML             |          7 |          1 |          3 |         11 |
 | /Users/peterhrvola/dev/scheduler/components/network/src/lib.rs                          | Rust             |         16 |          0 |          3 |         19 |
 | /Users/peterhrvola/dev/scheduler/components/network/src/main.rs                         | Rust             |          4 |          0 |          2 |          6 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/Cargo.toml                        | TOML             |         27 |          1 |          3 |         31 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/Cargo.toml                        | TOML             |         28 |          1 |          3 |         32 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/build.rs                          | Rust             |          5 |          0 |          1 |          6 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/src/main.rs                       | Rust             |         55 |          0 |         10 |         65 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/src/rpc/mod.rs                    | Rust             |        128 |          0 |         20 |        148 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/mod.rs              | Rust             |         31 |          0 |          4 |         35 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/resource_profile.rs | Rust             |         77 |          3 |         13 |         93 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/scheduler.rs        | Rust             |        171 |          4 |         23 |        198 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/src/main.rs                       | Rust             |         65 |          0 |         10 |         75 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/src/rpc/mod.rs                    | Rust             |        142 |          0 |         22 |        164 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/mod.rs              | Rust             |         32 |          0 |          4 |         36 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/resource_profile.rs | Rust             |        107 |          3 |         19 |        129 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/scheduler.rs        | Rust             |        218 |         35 |         35 |        288 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/server.rs           | Rust             |         31 |          0 |          5 |         36 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/task.rs             | Rust             |         92 |          0 |         10 |        102 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/task.rs             | Rust             |        120 |          1 |         13 |        134 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/src/scheduler/virtual_resource.rs | Rust             |         17 |          0 |          4 |         21 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/handlers.rs             | Rust             |        148 |          0 |         20 |        168 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/handlers.rs             | Rust             |        164 |          0 |         20 |        184 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/mod.rs                  | Rust             |         68 |          0 |         11 |         79 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/footer.hbs        | Handlebars       |          8 |          0 |          0 |          8 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/graph.hbs         | Handlebars       |         48 |          0 |          8 |         56 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/header.hbs        | Handlebars       |        133 |          0 |         18 |        151 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/index.hbs         | Handlebars       |          3 |          0 |          2 |          5 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/server.hbs        | Handlebars       |         94 |          0 |          3 |         97 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/task.hbs          | Handlebars       |        106 |          0 |          6 |        112 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler_agent/Cargo.toml                  | TOML             |         19 |          1 |          4 |         24 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler/src/webui/pages/task.hbs          | Handlebars       |        104 |          0 |          6 |        110 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler_agent/Cargo.toml                  | TOML             |         22 |          1 |          4 |         27 |
 | /Users/peterhrvola/dev/scheduler/components/scheduler_agent/build.rs                    | Rust             |          5 |          0 |          1 |          6 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler_agent/src/main.rs                 | Rust             |         94 |          0 |         13 |        107 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler_agent/src/task.rs                 | Rust             |         95 |          0 |          9 |        104 |
-| /Users/peterhrvola/dev/scheduler/components/scheduler_proto/scheduler.proto             | Protocol Buffers |         64 |          0 |         11 |         75 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler_agent/src/main.rs                 | Rust             |        114 |          0 |         14 |        128 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler_agent/src/task.rs                 | Rust             |        118 |          0 |         10 |        128 |
+| /Users/peterhrvola/dev/scheduler/components/scheduler_proto/scheduler.proto             | Protocol Buffers |         71 |          0 |         13 |         84 |
 | /Users/peterhrvola/dev/scheduler/rustfmt.toml                                           | TOML             |          5 |          1 |          1 |          7 |
-| Total                                                                                   |                  |      3,025 |         42 |        456 |      3,523 |
+| Total                                                                                   |                  |      3,182 |         64 |        473 |      3,719 |
 +-----------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+

@@ -10,8 +10,8 @@ mod prelude {
     use tonic::transport::Channel;
 
     pub(crate) use {
-        log::trace, machine_id::MachineId, std::convert::TryInto, std::sync::Arc,
-        tokio::sync::mpsc, tokio::sync::Mutex, log::debug,
+        log::debug, log::trace, machine_id::MachineId, std::convert::TryInto, std::sync::Arc,
+        tokio::sync::mpsc, tokio::sync::Mutex,
     };
     pub type Client = Arc<Mutex<SchedulerClient<Channel>>>;
     pub type BoxResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
@@ -19,9 +19,9 @@ mod prelude {
 
 use crate::prelude::*;
 use crate::scheduler::scheduler_client::SchedulerClient;
+use fern::colors::ColoredLevelConfig;
 use std::cmp::max;
 use tonic::codec::Streaming;
-use fern::colors::ColoredLevelConfig;
 
 #[tokio::main]
 async fn main() -> BoxResult<()> {
@@ -56,7 +56,6 @@ fn setup_logger() -> Result<(), fern::InitError> {
     Ok(())
 }
 
-
 async fn register(client: Client) -> BoxResult<()> {
     let mut client = client.lock().await;
     let request = tonic::Request::new(scheduler::RegistrationRequest {
@@ -67,7 +66,8 @@ async fn register(client: Client) -> BoxResult<()> {
     let response = client.register_server(request).await?.into_inner();
     if response.should_benchmark {
         let profiles = benchmark::run().await?;
-        let profile = get_maximum(profiles);
+        let mut profile = get_maximum(profiles);
+        profile.memory =  sys_info::mem_info()?.total;
         let request = tonic::Request::new(scheduler::BenchmarkSubmitRequest {
             machine_id: MachineId::get().to_string(),
             profile: Some(profile.into()),

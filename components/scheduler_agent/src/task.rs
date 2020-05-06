@@ -1,12 +1,12 @@
 use crate::prelude::*;
 use crate::scheduler;
 use crate::scheduler::scheduler_client::SchedulerClient;
-use bollard::container::InspectContainerOptions;
 use bollard::container::Config;
+use bollard::container::InspectContainerOptions;
 use bollard::Docker;
+use futures_util::stream::TryStreamExt;
 use std::time::Duration;
 use tokio::stream::StreamExt;
-use futures_util::stream::TryStreamExt;
 use tokio::task::JoinHandle;
 use tokio::time::delay_for;
 use tonic::codec::Streaming;
@@ -35,10 +35,14 @@ impl<'a> Task<'a> {
                 debug!("Container '{}' state: '{}'", id, container.state.status);
                 if !container.state.running {
                     debug!("Exiting profiling for '{}'", id);
-                    client.lock().await.finish_task(scheduler::FinishTaskRequest {
-                        machine_id: MachineId::get().to_string(),
-                        task_id: id.clone(),
-                    }).await?;
+                    client
+                        .lock()
+                        .await
+                        .finish_task(scheduler::FinishTaskRequest {
+                            machine_id: MachineId::get().to_string(),
+                            task_id: id.clone(),
+                        })
+                        .await?;
                     break;
                 }
                 let pid = container.state.pid.try_into()?;
@@ -46,8 +50,7 @@ impl<'a> Task<'a> {
                 let client = client.clone();
                 let id = id.clone();
                 let h = tokio::spawn(async move {
-                    let profiles =
-                        measure::run(Some(vec![pid]), None, Some(receiver)).await?;
+                    let profiles = measure::run(Some(vec![pid]), None, Some(receiver)).await?;
                     Self::submit_profile(id, client, profiles).await
                 });
                 delay_for(Duration::from_secs(30)).await;
@@ -96,16 +99,14 @@ impl<'a> TaskRunner<'a> {
         while let Some(x) = tasks.next().await {
             let task = x?.task.unwrap();
             debug!("Task received '{}'", &task.id);
-            use bollard::image::CreateImageOptions;
             use bollard::container::CreateContainerOptions;
             use bollard::container::StartContainerOptions;
+            use bollard::image::CreateImageOptions;
 
-            let options = Some(CreateImageOptions{
-                from_image: &task.image[..],
-                ..Default::default()
-              });
+            let options =
+                Some(CreateImageOptions { from_image: &task.image[..], ..Default::default() });
 
-            self.docker.create_image(options, None, None).try_collect::<Vec<_>>().await.unwrap();
+            let _ = self.docker.create_image(options, None, None).try_collect::<Vec<_>>().await;
             let options = Some(CreateContainerOptions { name: task.id.clone() });
 
             let config = Config {
@@ -114,7 +115,9 @@ impl<'a> TaskRunner<'a> {
                 ..Default::default()
             };
             let _ = self.docker.create_container(options, config).await;
-            self.docker.start_container(&task.id[..], None::<StartContainerOptions<String>>).await?;
+            let _ = self.docker
+                .start_container(&task.id[..], None::<StartContainerOptions<String>>)
+                .await;
             let mut task = Task::new(task.id.clone(), client.clone(), &self.docker);
             task.measure().await?;
             self.tasks.push(task);

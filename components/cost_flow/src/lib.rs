@@ -12,7 +12,7 @@
     clippy::single_match_else,
     clippy::wildcard_imports,
     clippy::new_without_default,
-    clippy::cast_sign_loss,
+    clippy::cast_sign_loss
 )]
 
 mod bfs;
@@ -26,6 +26,24 @@ use std::fmt::Debug;
 
 pub trait Graphable {
     fn name_label(&self) -> String;
+}
+
+impl Graphable for &str {
+    fn name_label(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl Graphable for () {
+    fn name_label(&self) -> String {
+        "()".to_string()
+    }
+}
+
+impl Graphable for u32 {
+    fn name_label(&self) -> String {
+        format!("{}", self)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -426,8 +444,8 @@ mod test {
     #[test]
     fn residual_graph() {
         let mut g = Graph::new();
-        let a = g.add_node(1);
-        let b = g.add_node(2);
+        let a = g.add_node(2);
+        let b = g.add_node(3);
 
         g.add_edge_with_flow(g.source, a, Capacity(2), Cost(1), Flow(2));
         g.add_edge_with_flow(g.source, b, Capacity(4), Cost(1), Flow(4));
@@ -438,13 +456,13 @@ mod test {
         let g = g.residual_graph().0;
         assert_eq!(
             r#"digraph g {
-"2" -> "0" [label="0/2;-1"];
-"3" -> "0" [label="0/4;-1"];
-"2" -> "3" [label="0/2;1"];
-"3" -> "2" [label="0/1;-1"];
-"1" -> "2" [label="0/1;-4"];
-"3" -> "1" [label="0/1;1"];
-"1" -> "3" [label="0/5;-1"];
+"()" -> "0" [label="0/2;-1"];
+"()" -> "0" [label="0/4;-1"];
+"()" -> "()" [label="0/2;1"];
+"()" -> "()" [label="0/1;-1"];
+"1" -> "()" [label="0/1;-4"];
+"()" -> "1" [label="0/1;1"];
+"1" -> "()" [label="0/5;-1"];
 
 }"#,
             g.graphviz()

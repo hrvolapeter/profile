@@ -4,7 +4,7 @@ const URL_PATH: &str = "http://speedtest.wdc01.softlayer.com/downloads/test1000.
 static NTHREADS: i32 = 8;
 
 pub fn run() {
-    for _ in 0..5 {
+    for _ in 0..15 {
         let mut children = vec![];
         for _ in 0..NTHREADS {
             children.push(thread::spawn(move || {

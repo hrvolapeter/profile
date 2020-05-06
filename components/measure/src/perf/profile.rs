@@ -18,19 +18,23 @@ type Record = (String, String, Option<String>, String);
 impl PerfProfile {
     pub fn from_stream(s: String) -> BoxResult<Vec<Self>> {
         trace!("Perf stdout: {}", s);
-        let mut rdr = csv::ReaderBuilder::new().has_headers(false).from_reader(s.as_bytes());
+        let mut rdr = csv::ReaderBuilder::new().has_headers(false).flexible(true).from_reader(s.as_bytes());
         let res: Vec<Record> = rdr.deserialize().filter_map(Result::ok).collect();
+        trace!("Res {:?}", &rdr.deserialize::<Record>().collect::<Vec<_>>());
         let res = group_by_key(res);
         trace!("Grouped {:?}", res);
-        Ok(res.into_iter().map(|x| PerfProfile {
-            l1_dcache_loads: *x.get("L1-dcache-load").unwrap_or(&0),
-            l1_dcache_load_misses: *x.get("L1-dcache-load-misses").unwrap_or(&0),
-            l1_icache_load_misses: *x.get("L1-icache-load-misses").unwrap_or(&0),
-            llc_load_misses: *x.get("LLC-load-misses").unwrap_or(&0),
-            llc_loads: *x.get("LLC-load").unwrap_or(&0),
-            cycles: *x.get("cycles").unwrap_or(&0),
-            instructions: *x.get("instructions").unwrap_or(&0),
-        }).collect())
+        Ok(res
+            .into_iter()
+            .map(|x| PerfProfile {
+                l1_dcache_loads: *x.get("L1-dcache-load").unwrap_or(&0),
+                l1_dcache_load_misses: *x.get("L1-dcache-load-misses").unwrap_or(&0),
+                l1_icache_load_misses: *x.get("L1-icache-load-misses").unwrap_or(&0),
+                llc_load_misses: *x.get("LLC-load-misses").unwrap_or(&0),
+                llc_loads: *x.get("LLC-load").unwrap_or(&0),
+                cycles: *x.get("cycles").unwrap_or(&0),
+                instructions: *x.get("instructions").unwrap_or(&0),
+            })
+            .collect())
     }
 }
 
