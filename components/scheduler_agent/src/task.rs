@@ -3,6 +3,7 @@ use crate::scheduler;
 use crate::scheduler::scheduler_client::SchedulerClient;
 use bollard::container::Config;
 use bollard::container::InspectContainerOptions;
+use bollard::container::RemoveContainerOptions;
 use bollard::Docker;
 use futures_util::stream::TryStreamExt;
 use std::time::Duration;
@@ -43,6 +44,7 @@ impl<'a> Task<'a> {
                             task_id: id.clone(),
                         })
                         .await?;
+                    docker.remove_container(&id, None::<RemoveContainerOptions>).await?;
                     break;
                 }
                 let pid = container.state.pid.try_into()?;
@@ -50,7 +52,7 @@ impl<'a> Task<'a> {
                 let client = client.clone();
                 let id = id.clone();
                 let h = tokio::spawn(async move {
-                    let profiles = measure::run(Some(vec![pid]), None, Some(receiver)).await?;
+                    let profiles = profiler::run(Some(vec![pid]), None, Some(receiver)).await?;
                     Self::submit_profile(id, client, profiles).await
                 });
                 delay_for(Duration::from_secs(30)).await;
@@ -66,7 +68,7 @@ impl<'a> Task<'a> {
     async fn submit_profile(
         task_id: String,
         client: Arc<Mutex<SchedulerClient<Channel>>>,
-        profiles: Vec<measure::ApplicationProfile>,
+        profiles: Vec<profiler::ApplicationProfile>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         let mut client = client.lock().await;
         let profiles: Vec<_> = profiles
@@ -97,8 +99,12 @@ impl<'a> TaskRunner<'a> {
     ) -> BoxResult<()> {
         trace!("Processing tasks");
         while let Some(x) = tasks.next().await {
-            let task = x?.task.unwrap();
-            debug!("Task received '{}'", &task.id);
+            let x = x?;
+            debug!("Task received '{:#?}'", &x);
+            if &x.state == &1 {
+                continue;
+            }
+            let task = x.task.unwrap();
             use bollard::container::CreateContainerOptions;
             use bollard::container::StartContainerOptions;
             use bollard::image::CreateImageOptions;
@@ -106,7 +112,7 @@ impl<'a> TaskRunner<'a> {
             let options =
                 Some(CreateImageOptions { from_image: &task.image[..], ..Default::default() });
 
-            let _ = self.docker.create_image(options, None, None).try_collect::<Vec<_>>().await;
+            self.docker.create_image(options, None, None).try_collect::<Vec<_>>().await?;
             let options = Some(CreateContainerOptions { name: task.id.clone() });
 
             let config = Config {
@@ -114,10 +120,10 @@ impl<'a> TaskRunner<'a> {
                 cmd: task.cmd.map(|x| x.split_whitespace().map(|x| x.to_string()).collect()),
                 ..Default::default()
             };
-            let _ = self.docker.create_container(options, config).await;
-            let _ = self.docker
+            self.docker.create_container(options, config).await?;
+            self.docker
                 .start_container(&task.id[..], None::<StartContainerOptions<String>>)
-                .await;
+                .await?;
             let mut task = Task::new(task.id.clone(), client.clone(), &self.docker);
             task.measure().await?;
             self.tasks.push(task);

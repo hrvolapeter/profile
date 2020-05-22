@@ -87,8 +87,8 @@ async fn subscribe_tasks(client: Client) -> BoxResult<Streaming<scheduler::Subsc
     Ok(response)
 }
 
-fn get_maximum(profiles: Vec<measure::ApplicationProfile>) -> measure::ApplicationProfile {
-    profiles.into_iter().fold(Default::default(), |x, y| measure::ApplicationProfile {
+fn get_maximum(profiles: Vec<profiler::ApplicationProfile>) -> profiler::ApplicationProfile {
+    profiles.into_iter().fold(Default::default(), |x, y| profiler::ApplicationProfile {
         cache_misses: max(x.cache_misses, y.cache_misses),
         cache_references: max(x.cache_references, y.cache_references),
         vfs_write: max(x.vfs_write, y.vfs_write),
@@ -106,8 +106,8 @@ fn get_maximum(profiles: Vec<measure::ApplicationProfile>) -> measure::Applicati
     })
 }
 
-impl From<measure::ApplicationProfile> for scheduler::Profile {
-    fn from(profile: measure::ApplicationProfile) -> Self {
+impl From<profiler::ApplicationProfile> for scheduler::Profile {
+    fn from(profile: profiler::ApplicationProfile) -> Self {
         Self {
             cache_misses: profile.cache_misses as u64,
             cache_references: profile.cache_references as u64,

@@ -69,7 +69,7 @@ pub async fn run(
         tokio::spawn(async move {
             cancel_channel.recv().await;
             for mut sender in senders {
-                sender.send(true).await.unwrap();
+                let _ = sender.send(true).await;
             }
         });
     }
@@ -81,6 +81,6 @@ pub async fn run(
 
 async fn exit_tracers(senders: &mut [&mut Sender<bool>]) {
     for sender in senders {
-        sender.send(true).await.unwrap();
+        let _ = sender.send(true).await;
     }
 }

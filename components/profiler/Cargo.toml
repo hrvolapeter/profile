@@ -1,5 +1,5 @@
 [package]
-name = "measure"
+name = "profiler"
 version = "0.1.0"
 authors = ["phrv"]
 edition = "2018"

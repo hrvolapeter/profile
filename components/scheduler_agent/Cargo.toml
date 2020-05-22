@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 benchmark = { path = "../benchmark"}
-measure = { path = "../measure"}
+profiler = { path = "../profiler"}
 tokio = { version = "0.2", features = ["full"] }
 prost = "0.6"
 tonic = "0.2"

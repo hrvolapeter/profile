@@ -4,7 +4,7 @@ use clap::{App, Arg};
 use fern::colors::ColoredLevelConfig;
 use futures::executor::block_on;
 use log::debug;
-use measure::ApplicationProfile;
+use profiler::ApplicationProfile;
 use std::error::Error;
 use std::process::Command;
 use tokio::sync::mpsc;
@@ -12,7 +12,7 @@ use tokio::sync::mpsc;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     setup_logger()?;
-    let matches = App::new("measure")
+    let matches = App::new("profiler")
         .arg(Arg::with_name("pid").short('p').long("pid").multiple(true).takes_value(true))
         .arg(Arg::with_name("app").multiple(true).last(true))
         .get_matches();
@@ -34,12 +34,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         let f = Box::new(move || {
             Command::new(args[0].clone()).args(&args[1..]).output().unwrap();
         });
-        let ap = measure::run(None, Some(f), Some(receiver)).await?;
+        let ap = profiler::run(None, Some(f), Some(receiver)).await?;
         println!("{}", ApplicationProfile::out(ap).unwrap());
         return Ok(());
     }
 
-    let ap = measure::run(pids, None::<Box<dyn FnOnce() -> () + Send>>, Some(receiver)).await?;
+    let ap = profiler::run(pids, None::<Box<dyn FnOnce() -> () + Send>>, Some(receiver)).await?;
     println!("{}", ApplicationProfile::out(ap).unwrap());
     Ok(())
 }

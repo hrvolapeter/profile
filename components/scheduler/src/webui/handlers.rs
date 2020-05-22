@@ -143,6 +143,7 @@ pub async fn get_task(scheduler: Scheduler) -> Result<impl warp::Reply, warp::re
                 ("schedulable", format!("{}", x.schedulable())),
                 ("request", format!("{:#?}", x.request())),
                 ("profile", format!("{:#?}", x.debug_profile())),
+                ("uuid", format!("{:#?}", x.id()))
             ]
             .into_iter()
             .collect()

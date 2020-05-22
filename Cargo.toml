@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "components/measure",
+    "components/profiler",
     "components/cpu",
     "components/disk",
     "components/memory",

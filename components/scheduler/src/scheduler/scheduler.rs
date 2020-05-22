@@ -270,7 +270,7 @@ impl Scheduler {
                 unscheduled,
                 graph.sink,
                 Capacity(1),
-                Cost((NormalizedResourceProfile::MAX.inner_product() * Decimal::new(2,0)).scaled_i64()),
+                Cost((NormalizedResourceProfile::MAX.inner_product()).scaled_i64()),
             );
         }
     

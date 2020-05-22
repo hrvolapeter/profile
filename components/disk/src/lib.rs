@@ -49,14 +49,14 @@ fn benchmark_write(p: String, size: u32) -> BoxResult<()> {
     let mut vector = Vec::new();
 
     let mut rng = rand::thread_rng();
-    for _ in 0..(size * 10_000_000) {
+    for _ in 0..(size * 1_000_000) {
         vector.push(rng.gen::<char>());
     }
     let string: String = vector.iter().collect();
 
     let file = OpenOptions::new().create(true).write(true).truncate(true).open(p)?;
     let mut wrt = BufWriter::new(file);
-    for _ in 0..100 {
+    for _ in 0..1000 {
         wrt.write_all(string.as_bytes())?;
     }
     wrt.flush()?;
@@ -65,7 +65,7 @@ fn benchmark_write(p: String, size: u32) -> BoxResult<()> {
 
 fn benchmark_read(p: String) -> BoxResult<Digest> {
     let mut context = Context::new(&SHA256);
-    let mut buffer = [0; 4096 * 4];
+    let mut buffer = [0; 4096 * 40];
     let file = OpenOptions::new().read(true).open(p)?;
     let mut rdr = BufReader::new(file);
     loop {
